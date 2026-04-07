@@ -350,13 +350,13 @@
     function fM(n) { return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
 
     function init() {
-        items = JSON.parse(localStorage.getItem('v_items')) || [];
-        ventas = JSON.parse(localStorage.getItem('v_ventas')) || [];
-        creditos = JSON.parse(localStorage.getItem('v_creditos')) || [];
-        cierres = JSON.parse(localStorage.getItem('v_cierres')) || [];
-        tasaDolar = parseFloat(localStorage.getItem('v_tasa')) || 36.50;
-        ivaPorcentaje = parseFloat(localStorage.getItem('v_iva')) || 16;
-        stockMinimoGlobal = parseFloat(localStorage.getItem('v_stock_min_global')) || 5;
+        items = JSON.parse(localStorage.getItem('beta_items')) || [];
+        ventas = JSON.parse(localStorage.getItem('beta_ventas')) || [];
+        creditos = JSON.parse(localStorage.getItem('beta_creditos')) || [];
+        cierres = JSON.parse(localStorage.getItem('beta_cierres')) || [];
+        tasaDolar = parseFloat(localStorage.getItem('beta_tasa')) || 36.50;
+        ivaPorcentaje = parseFloat(localStorage.getItem('beta_iva')) || 16;
+        stockMinimoGlobal = parseFloat(localStorage.getItem('beta_stock_min_global')) || 5;
         
         document.getElementById('tasa').value = tasaDolar;
         document.getElementById('ivaPorcentaje').value = ivaPorcentaje;
@@ -364,7 +364,7 @@
         document.getElementById('stockMinimo').value = stockMinimoGlobal;
         document.getElementById('fechaActual').textContent = diaActual;
         
-        const config = localStorage.getItem('fb_config');
+        const config = localStorage.getItem('beta_fb_config');
         if(config) {
             const c = JSON.parse(config);
             document.getElementById('projectId').value = c.projectId;
@@ -408,13 +408,13 @@
     function iniciarFirebase(config, projectId, apiKey) {
         firebase.initializeApp(config);
         db = firebase.database();
-        localStorage.setItem('fb_config', JSON.stringify({projectId, apiKey}));
+        localStorage.setItem('beta_fb_config', JSON.stringify({projectId, apiKey}));
         db.ref('.info/connected').on('value', snap => {
             firebaseConnected = snap.val() === true;
             document.getElementById('connectionStatus').textContent = firebaseConnected ? '🟢 Sincronizado' : '🔴 Local';
             document.getElementById('connectionStatus').className = 'connection-status ' + (firebaseConnected ? 'online' : 'offline');
         });
-        db.ref('viveres_pro/data').on('value', snap => {
+        db.ref('viveres_beta/data').on('value', snap => {
             const data = snap.val();
             if(data) {
                 items = data.items || []; ventas = data.ventas || []; creditos = data.creditos || []; 
@@ -431,15 +431,15 @@
     function sync() {
         ivaPorcentaje = parseFloat(document.getElementById('ivaPorcentaje').value) || 0;
         stockMinimoGlobal = parseFloat(document.getElementById('stockMinimoGlobal').value) || 5;
-        localStorage.setItem('v_items', JSON.stringify(items));
-        localStorage.setItem('v_ventas', JSON.stringify(ventas));
-        localStorage.setItem('v_creditos', JSON.stringify(creditos));
-        localStorage.setItem('v_cierres', JSON.stringify(cierres));
-        localStorage.setItem('v_tasa', tasaDolar);
-        localStorage.setItem('v_iva', ivaPorcentaje);
-        localStorage.setItem('v_stock_min_global', stockMinimoGlobal);
+        localStorage.setItem('beta_items', JSON.stringify(items));
+        localStorage.setItem('beta_ventas', JSON.stringify(ventas));
+        localStorage.setItem('beta_creditos', JSON.stringify(creditos));
+        localStorage.setItem('beta_cierres', JSON.stringify(cierres));
+        localStorage.setItem('beta_tasa', tasaDolar);
+        localStorage.setItem('beta_iva', ivaPorcentaje);
+        localStorage.setItem('beta_stock_min_global', stockMinimoGlobal);
         if(firebaseConnected && db && navigator.onLine) {
-            db.ref('viveres_pro/data').set({ items, ventas, creditos, cierres, tasa: tasaDolar, iva: ivaPorcentaje, stockMinGlobal: stockMinimoGlobal });
+            db.ref('viveres_beta/data').set({ items, ventas, creditos, cierres, tasa: tasaDolar, iva: ivaPorcentaje, stockMinGlobal: stockMinimoGlobal });
         }
     }
 
