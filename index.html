@@ -346,6 +346,7 @@
     let db = null, firebaseConnected = false, itemPendientePeso = null;
     let cameraInventarioActive = false, cameraVentasActive = false;
     let html5QrcodeScanner = null;
+    let scannerInventario = null, scannerVentas = null;
 
     function fM(n) { return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
 
@@ -477,68 +478,50 @@
         const statusDiv = document.getElementById('qr-status-inventario');
         
         readerDiv.style.display = 'block';
-        statusDiv.textContent = 'Solicitando acceso a la cámara...';
+        readerDiv.innerHTML = '';
+        statusDiv.textContent = 'Inicializando cámara...';
         
-        // Detener cualquier scanner anterior
-        if(html5QrcodeScanner) {
+        // Cerrar scanner anterior si existe
+        if(scannerInventario) {
             try {
-                html5QrcodeScanner.stop();
+                scannerInventario.clear();
             } catch(e) {}
+            scannerInventario = null;
         }
         
-        html5QrcodeScanner = new Html5Qrcode("qr-reader-inventario");
-        
-        // Intentar con la cámara trasera
-        html5QrcodeScanner.start(
-            { facingMode: { exact: "environment" } },
-            { fps: 15, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-            onScanSuccessInventario,
-            onScanErrorInventario
-        ).then(() => {
+        try {
+            scannerInventario = new Html5QrcodeScanner(
+                "qr-reader-inventario",
+                { fps: 10, qrbox: 250, rememberLastUsedCamera: true, showTorchButtonIfSupported: true },
+                false
+            );
+            
+            scannerInventario.render(onScanSuccessInventario, onScanErrorInventario);
             cameraInventarioActive = true;
             statusDiv.textContent = '✓ Cámara activa - Escanea un código';
-        }).catch(err => {
-            console.warn('Error con cámara trasera, intentando con cualquier cámara:', err);
-            statusDiv.textContent = 'Intentando acceso alternativo...';
-            
-            // Reintento sin especificar cámara trasera
-            html5QrcodeScanner.start(
-                { facingMode: "environment" },
-                { fps: 15, qrbox: { width: 250, height: 250 } },
-                onScanSuccessInventario,
-                onScanErrorInventario
-            ).then(() => {
-                cameraInventarioActive = true;
-                statusDiv.textContent = '✓ Cámara activa - Escanea un código';
-            }).catch(err2 => {
-                console.error('Error al iniciar cámara:', err2);
-                statusDiv.innerHTML = '✗ Error: No se pudo acceder a la cámara.<br>Verifica los permisos en ajustes.<br><button onclick="closeCameraInventario()" style="padding:5px; margin-top:5px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer;">Cerrar</button>';
-                cameraInventarioActive = false;
-            });
-        });
+        } catch(err) {
+            console.error('Error al iniciar scanner:', err);
+            statusDiv.innerHTML = '✗ Error: ' + err.message + '<br><button onclick="closeCameraInventario()" style="padding:5px; margin-top:5px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer;">Cerrar</button>';
+            cameraInventarioActive = false;
+        }
     }
 
     function closeCameraInventario() {
-        if(html5QrcodeScanner) {
+        if(scannerInventario) {
             try {
-                html5QrcodeScanner.stop().then(() => {
-                    document.getElementById('qr-reader-inventario').style.display = 'none';
-                    document.getElementById('qr-status-inventario').textContent = '';
-                    cameraInventarioActive = false;
-                    html5QrcodeScanner = null;
-                }).catch(err => {
-                    console.error('Error al cerrar cámara:', err);
-                    document.getElementById('qr-reader-inventario').style.display = 'none';
-                    document.getElementById('qr-status-inventario').textContent = '';
-                    cameraInventarioActive = false;
-                    html5QrcodeScanner = null;
-                });
-            } catch(e) {
-                console.error('Error crítico al cerrar:', e);
+                scannerInventario.clear();
                 document.getElementById('qr-reader-inventario').style.display = 'none';
+                document.getElementById('qr-reader-inventario').innerHTML = '';
                 document.getElementById('qr-status-inventario').textContent = '';
                 cameraInventarioActive = false;
-                html5QrcodeScanner = null;
+                scannerInventario = null;
+            } catch(e) {
+                console.error('Error al cerrar scanner:', e);
+                document.getElementById('qr-reader-inventario').style.display = 'none';
+                document.getElementById('qr-reader-inventario').innerHTML = '';
+                document.getElementById('qr-status-inventario').textContent = '';
+                cameraInventarioActive = false;
+                scannerInventario = null;
             }
         }
     }
@@ -586,68 +569,50 @@
         const statusDiv = document.getElementById('qr-status-ventas');
         
         readerDiv.style.display = 'block';
-        statusDiv.textContent = 'Solicitando acceso a la cámara...';
+        readerDiv.innerHTML = '';
+        statusDiv.textContent = 'Inicializando cámara...';
         
-        // Detener cualquier scanner anterior
-        if(html5QrcodeScanner) {
+        // Cerrar scanner anterior si existe
+        if(scannerVentas) {
             try {
-                html5QrcodeScanner.stop();
+                scannerVentas.clear();
             } catch(e) {}
+            scannerVentas = null;
         }
         
-        html5QrcodeScanner = new Html5Qrcode("qr-reader-ventas");
-        
-        // Intentar con la cámara trasera
-        html5QrcodeScanner.start(
-            { facingMode: { exact: "environment" } },
-            { fps: 15, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-            onScanSuccessVentas,
-            onScanErrorVentas
-        ).then(() => {
+        try {
+            scannerVentas = new Html5QrcodeScanner(
+                "qr-reader-ventas",
+                { fps: 10, qrbox: 250, rememberLastUsedCamera: true, showTorchButtonIfSupported: true },
+                false
+            );
+            
+            scannerVentas.render(onScanSuccessVentas, onScanErrorVentas);
             cameraVentasActive = true;
             statusDiv.textContent = '✓ Cámara activa - Escanea un código de producto';
-        }).catch(err => {
-            console.warn('Error con cámara trasera, intentando con cualquier cámara:', err);
-            statusDiv.textContent = 'Intentando acceso alternativo...';
-            
-            // Reintento sin especificar cámara trasera
-            html5QrcodeScanner.start(
-                { facingMode: "environment" },
-                { fps: 15, qrbox: { width: 250, height: 250 } },
-                onScanSuccessVentas,
-                onScanErrorVentas
-            ).then(() => {
-                cameraVentasActive = true;
-                statusDiv.textContent = '✓ Cámara activa - Escanea un código de producto';
-            }).catch(err2 => {
-                console.error('Error al iniciar cámara:', err2);
-                statusDiv.innerHTML = '✗ Error: No se pudo acceder a la cámara.<br>Verifica los permisos en ajustes.<br><button onclick="closeCameraVentas()" style="padding:5px; margin-top:5px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer;">Cerrar</button>';
-                cameraVentasActive = false;
-            });
-        });
+        } catch(err) {
+            console.error('Error al iniciar scanner:', err);
+            statusDiv.innerHTML = '✗ Error: ' + err.message + '<br><button onclick="closeCameraVentas()" style="padding:5px; margin-top:5px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer;">Cerrar</button>';
+            cameraVentasActive = false;
+        }
     }
 
     function closeCameraVentas() {
-        if(html5QrcodeScanner) {
+        if(scannerVentas) {
             try {
-                html5QrcodeScanner.stop().then(() => {
-                    document.getElementById('qr-reader-ventas').style.display = 'none';
-                    document.getElementById('qr-status-ventas').textContent = '';
-                    cameraVentasActive = false;
-                    html5QrcodeScanner = null;
-                }).catch(err => {
-                    console.error('Error al cerrar cámara:', err);
-                    document.getElementById('qr-reader-ventas').style.display = 'none';
-                    document.getElementById('qr-status-ventas').textContent = '';
-                    cameraVentasActive = false;
-                    html5QrcodeScanner = null;
-                });
-            } catch(e) {
-                console.error('Error crítico al cerrar:', e);
+                scannerVentas.clear();
                 document.getElementById('qr-reader-ventas').style.display = 'none';
+                document.getElementById('qr-reader-ventas').innerHTML = '';
                 document.getElementById('qr-status-ventas').textContent = '';
                 cameraVentasActive = false;
-                html5QrcodeScanner = null;
+                scannerVentas = null;
+            } catch(e) {
+                console.error('Error al cerrar scanner:', e);
+                document.getElementById('qr-reader-ventas').style.display = 'none';
+                document.getElementById('qr-reader-ventas').innerHTML = '';
+                document.getElementById('qr-status-ventas').textContent = '';
+                cameraVentasActive = false;
+                scannerVentas = null;
             }
         }
     }
