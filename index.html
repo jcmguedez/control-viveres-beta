@@ -384,7 +384,12 @@
         </div>
         <div class="input-group">
             <label>Producto</label>
-            <input type="text" id="productoFactura" placeholder="Nombre del producto">
+            <div class="camera-container">
+                <input type="text" id="productoFactura" placeholder="Nombre del producto" class="search-input" style="margin-bottom: 0;">
+                <button class="btn-camera" onclick="toggleCameraProveedores()">📷 ESCANEAR</button>
+            </div>
+            <div id="qr-reader-proveedores" style="display:none; margin-top:10px;"></div>
+            <div class="qr-reader-status" id="qr-status-proveedores"></div>
         </div>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
             <div style="flex:1;">
@@ -544,9 +549,9 @@
     let items = [], ventas = [], creditos = [], carrito = [], cierres = [], proveedores = [], facturas = [];
     let tasaDolar = 36.50, diaActual = new Date().toLocaleDateString('es-ES'), ivaPorcentaje = 16, stockMinimoGlobal = 5;
     let db = null, firebaseConnected = false, itemPendientePeso = null;
-    let cameraInventarioActive = false, cameraVentasActive = false;
+    let cameraInventarioActive = false, cameraVentasActive = false, cameraProveedoresActive = false;
     let html5QrcodeScanner = null;
-    let scannerInventario = null, scannerVentas = null;
+    let scannerInventario = null, scannerVentas = null, scannerProveedores = null;
 
     function fM(n) { return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
 
@@ -972,6 +977,102 @@
                 scannerVentas = null;
             }
         }
+    }
+
+    function toggleCameraProveedores() {
+        if(!libreriasListas) {
+            alert('Las librerías aún se están cargando. Por favor, espera un momento.');
+            return;
+        }
+        if(cameraProveedoresActive) {
+            closeCameraProveedores();
+        } else {
+            openCameraProveedores();
+        }
+    }
+
+    function openCameraProveedores() {
+        if(typeof Html5QrcodeScanner === 'undefined') {
+            alert('Error: La librería de escaneo aún no está disponible. Por favor, recarga la página.');
+            return;
+        }
+        
+        const readerDiv = document.getElementById('qr-reader-proveedores');
+        const statusDiv = document.getElementById('qr-status-proveedores');
+        
+        readerDiv.style.display = 'block';
+        readerDiv.innerHTML = '';
+        statusDiv.textContent = 'Inicializando cámara...';
+        
+        if(scannerProveedores) {
+            try {
+                scannerProveedores.clear();
+            } catch(e) {}
+            scannerProveedores = null;
+        }
+        
+        try {
+            scannerProveedores = new Html5QrcodeScanner(
+                "qr-reader-proveedores",
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 }, 
+                    rememberLastUsedCamera: true, 
+                    showTorchButtonIfSupported: true,
+                    aspectRatio: 1.0,
+                    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.EAN_13]
+                },
+                false
+            );
+            
+            scannerProveedores.render(onScanSuccessProveedores, onScanErrorProveedores);
+            
+            setTimeout(() => {
+                personalizarBotonesEscaner();
+                cameraProveedoresActive = true;
+            }, 500);
+        } catch(e) {
+            console.error('Error al inicializar escáner:', e);
+            statusDiv.textContent = 'Error: ' + e.message;
+        }
+    }
+
+    function closeCameraProveedores() {
+        if(scannerProveedores) {
+            try {
+                scannerProveedores.clear();
+                document.getElementById('qr-reader-proveedores').style.display = 'none';
+                document.getElementById('qr-reader-proveedores').innerHTML = '';
+                document.getElementById('qr-status-proveedores').textContent = '';
+                cameraProveedoresActive = false;
+                scannerProveedores = null;
+            } catch(e) {
+                console.error('Error al cerrar scanner:', e);
+                document.getElementById('qr-reader-proveedores').style.display = 'none';
+                document.getElementById('qr-reader-proveedores').innerHTML = '';
+                document.getElementById('qr-status-proveedores').textContent = '';
+                cameraProveedoresActive = false;
+                scannerProveedores = null;
+            }
+        }
+    }
+
+    function onScanSuccessProveedores(decodedText) {
+        const producto = items.find(i => i.codigoBarras === decodedText);
+        if(producto) {
+            document.getElementById('productoFactura').value = producto.nombre;
+            document.getElementById('costoUnitarioFactura').value = (producto.costo * tasaDolar).toFixed(2);
+            document.getElementById('qr-status-proveedores').textContent = 'Producto encontrado: ' + producto.nombre;
+        } else {
+            document.getElementById('productoFactura').value = decodedText;
+            document.getElementById('qr-status-proveedores').textContent = 'Codigo: ' + decodedText + ' (no en inventario)';
+        }
+        
+        setTimeout(() => closeCameraProveedores(), 500);
+    }
+
+    function onScanErrorProveedores(error) {
+        // Silenciar errores
     }
 
     function onScanSuccessVentas(decodedText) {
