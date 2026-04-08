@@ -338,9 +338,35 @@
 <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.4/dist/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js"></script>
 
 <script>
+    // Esperar a que las librerías estén cargadas
+    let libreriasListas = false;
+    let intentosVerificacion = 0;
+    const maxIntentos = 50; // 5 segundos (50 * 100ms)
+    
+    function verificarLibrerias() {
+        if(typeof Html5QrcodeScanner !== 'undefined' && typeof firebase !== 'undefined') {
+            libreriasListas = true;
+            console.log('✓ Librerías cargadas correctamente');
+            init();
+        } else if(intentosVerificacion < maxIntentos) {
+            intentosVerificacion++;
+            setTimeout(verificarLibrerias, 100);
+        } else {
+            console.error('✗ Error: Las librerías no se cargaron después de 5 segundos');
+            alert('Error: No se pudieron cargar las librerías necesarias. Por favor, recarga la página.');
+        }
+    }
+    
+    // Iniciar verificación cuando el DOM esté listo
+    if(document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', verificarLibrerias);
+    } else {
+        verificarLibrerias();
+    }
+    
     let items = [], ventas = [], creditos = [], carrito = [], cierres = [];
     let tasaDolar = 36.50, diaActual = new Date().toLocaleDateString('es-ES'), ivaPorcentaje = 16, stockMinimoGlobal = 5;
     let db = null, firebaseConnected = false, itemPendientePeso = null;
@@ -466,6 +492,10 @@
 
     // ============ FUNCIONES DE ESCANEO DE CÁMARA ============
     function toggleCameraInventario() {
+        if(!libreriasListas) {
+            alert('Las librerías aún se están cargando. Por favor, espera un momento.');
+            return;
+        }
         if(cameraInventarioActive) {
             closeCameraInventario();
         } else {
@@ -474,6 +504,11 @@
     }
 
     function openCameraInventario() {
+        if(typeof Html5QrcodeScanner === 'undefined') {
+            alert('Error: La librería de escaneo aún no está disponible. Por favor, recarga la página.');
+            return;
+        }
+        
         const readerDiv = document.getElementById('qr-reader-inventario');
         const statusDiv = document.getElementById('qr-status-inventario');
         
@@ -557,6 +592,10 @@
     }
 
     function toggleCameraVentas() {
+        if(!libreriasListas) {
+            alert('Las librerías aún se están cargando. Por favor, espera un momento.');
+            return;
+        }
         if(cameraVentasActive) {
             closeCameraVentas();
         } else {
@@ -565,6 +604,11 @@
     }
 
     function openCameraVentas() {
+        if(typeof Html5QrcodeScanner === 'undefined') {
+            alert('Error: La librería de escaneo aún no está disponible. Por favor, recarga la página.');
+            return;
+        }
+        
         const readerDiv = document.getElementById('qr-reader-ventas');
         const statusDiv = document.getElementById('qr-status-ventas');
         
