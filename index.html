@@ -190,6 +190,7 @@
         <button class="tab-btn active" onclick="switchTab('inventario')">📦 Stock</button>
         <button class="tab-btn" onclick="switchTab('ventas')">🛒 Venta</button>
         <button class="tab-btn" onclick="switchTab('creditos')">💳 Créditos</button>
+        <button class="tab-btn" onclick="switchTab('proveedores')">🏢 Proveedores</button>
         <button class="tab-btn" onclick="switchTab('reportes')">📊 Reportes</button>
     </div>
 
@@ -325,6 +326,103 @@
         <div id="listaCreditos" class="list-container"></div>
     </div>
 
+    <!-- TAB: PROVEEDORES -->
+    <div id="proveedores" class="tab-content">
+        <h2>🏢 Registrar Proveedor</h2>
+        <input type="hidden" id="editProveedorId">
+        <div class="input-group">
+            <label>Nombre de la Empresa</label>
+            <input type="text" id="nombreProveedor" placeholder="Nombre del proveedor" class="search-input">
+        </div>
+        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1;">
+                <label>RIF</label>
+                <input type="text" id="rifProveedor" placeholder="J-12345678-9">
+            </div>
+            <div style="flex:1;">
+                <label>Telefono</label>
+                <input type="text" id="telefonoProveedor" placeholder="+58 XXX XXXX">
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Correo</label>
+            <input type="email" id="correoProveedor" placeholder="proveedor@email.com">
+        </div>
+        <div class="input-group">
+            <label>Vendedor</label>
+            <input type="text" id="vendedorProveedor" placeholder="Nombre del vendedor">
+        </div>
+        <div class="input-group">
+            <label>Direccion</label>
+            <input type="text" id="direccionProveedor" placeholder="Direccion completa">
+        </div>
+        <button class="btn-add" onclick="guardarProveedor()" style="width:100%; margin-bottom:10px;">+ GUARDAR PROVEEDOR</button>
+        <button class="btn-danger" onclick="limpiarFormProveedor()" style="width:100%; margin-bottom:20px;">LIMPIAR</button>
+
+        <h2>📋 Registrar Factura de Compra</h2>
+        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1;">
+                <label>Proveedor</label>
+                <select id="proveedorFactura" onchange="cargarProveedorFactura()">
+                    <option value="">-- Seleccionar --</option>
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label>Nro Factura</label>
+                <input type="text" id="nroFactura" placeholder="F-001">
+            </div>
+        </div>
+        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1;">
+                <label>Fecha Factura</label>
+                <input type="date" id="fechaFactura">
+            </div>
+            <div style="flex:1;">
+                <label>Fecha Vencimiento</label>
+                <input type="date" id="fechaVencimiento">
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Producto</label>
+            <input type="text" id="productoFactura" placeholder="Nombre del producto">
+        </div>
+        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1;">
+                <label>Costo Unitario (Bs)</label>
+                <input type="number" id="costoUnitarioFactura" step="0.01" placeholder="0.00">
+            </div>
+            <div style="flex:1;">
+                <label>Cantidad</label>
+                <input type="number" id="cantidadFactura" step="0.01" placeholder="1">
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Aplicar IVA?</label>
+            <div class="switch-container">
+                <span>Incluir IVA (16%)</span>
+                <label class="switch">
+                    <input type="checkbox" id="ivaFactura" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="stats-box" style="border-left-color: var(--info); background: #f0f8ff;">
+            <div class="stats-label">TOTAL A PAGAR</div>
+            <div class="stats-value" id="totalFacturaPreview" style="color: var(--info);">Bs. 0,00</div>
+        </div>
+        <button class="btn-add" onclick="guardarFactura()" style="width:100%; margin-bottom:10px;">+ ANADIR FACTURA</button>
+        <button class="btn-danger" onclick="limpiarFormFactura()" style="width:100%; margin-bottom:20px;">LIMPIAR</button>
+
+        <h2>🚨 Alertas de Vencimiento</h2>
+        <div id="alertasVencimiento" class="list-container"></div>
+
+        <h2>📊 Cuentas por Pagar</h2>
+        <div id="cuentasPorPagar" class="list-container"></div>
+
+        <h2>📝 Historial de Facturas</h2>
+        <div id="historialFacturas" class="list-container"></div>
+    </div>
+
     <!-- TAB: REPORTES -->
     <div id="reportes" class="tab-content">
         <h2>📊 Dashboard Control Diario</h2>
@@ -443,7 +541,7 @@
         verificarLibrerias();
     }
     
-    let items = [], ventas = [], creditos = [], carrito = [], cierres = [];
+    let items = [], ventas = [], creditos = [], carrito = [], cierres = [], proveedores = [], facturas = [];
     let tasaDolar = 36.50, diaActual = new Date().toLocaleDateString('es-ES'), ivaPorcentaje = 16, stockMinimoGlobal = 5;
     let db = null, firebaseConnected = false, itemPendientePeso = null;
     let cameraInventarioActive = false, cameraVentasActive = false;
@@ -457,6 +555,8 @@
         ventas = JSON.parse(localStorage.getItem('beta_ventas')) || [];
         creditos = JSON.parse(localStorage.getItem('beta_creditos')) || [];
         cierres = JSON.parse(localStorage.getItem('beta_cierres')) || [];
+        proveedores = JSON.parse(localStorage.getItem('beta_proveedores')) || [];
+        facturas = JSON.parse(localStorage.getItem('beta_facturas')) || [];
         tasaDolar = parseFloat(localStorage.getItem('beta_tasa')) || 36.50;
         ivaPorcentaje = parseFloat(localStorage.getItem('beta_iva')) || 16;
         stockMinimoGlobal = parseFloat(localStorage.getItem('beta_stock_min_global')) || 5;
@@ -521,7 +621,8 @@
             const data = snap.val();
             if(data) {
                 items = data.items || []; ventas = data.ventas || []; creditos = data.creditos || []; 
-                cierres = data.cierres || []; tasaDolar = data.tasa || tasaDolar;
+                cierres = data.cierres || []; proveedores = data.proveedores || []; facturas = data.facturas || [];
+                tasaDolar = data.tasa || tasaDolar;
                 ivaPorcentaje = data.iva || ivaPorcentaje;
                 stockMinimoGlobal = data.stockMinGlobal || stockMinimoGlobal;
                 document.getElementById('ivaPorcentaje').value = ivaPorcentaje;
@@ -538,11 +639,13 @@
         localStorage.setItem('beta_ventas', JSON.stringify(ventas));
         localStorage.setItem('beta_creditos', JSON.stringify(creditos));
         localStorage.setItem('beta_cierres', JSON.stringify(cierres));
+        localStorage.setItem('beta_proveedores', JSON.stringify(proveedores));
+        localStorage.setItem('beta_facturas', JSON.stringify(facturas));
         localStorage.setItem('beta_tasa', tasaDolar);
         localStorage.setItem('beta_iva', ivaPorcentaje);
         localStorage.setItem('beta_stock_min_global', stockMinimoGlobal);
         if(firebaseConnected && db && navigator.onLine) {
-            db.ref('viveres_beta/data').set({ items, ventas, creditos, cierres, tasa: tasaDolar, iva: ivaPorcentaje, stockMinGlobal: stockMinimoGlobal });
+            db.ref('viveres_beta/data').set({ items, ventas, creditos, cierres, proveedores, facturas, tasa: tasaDolar, iva: ivaPorcentaje, stockMinGlobal: stockMinimoGlobal });
         }
     }
 
@@ -991,6 +1094,7 @@
         document.getElementById('reporteFallas').innerHTML = fallas.length ? fallas.map(f => `<div>• ${f.nombre}: <b>${f.unidad === 'KG' ? f.cantidad.toFixed(3) : f.cantidad}</b> <span class="falla-badge ${f.cantidad==0?'agotado':'bajo'}">${f.cantidad==0?'AGOTADO':'BAJO'}</span></div>`).join('') : 'No hay fallas';
 
         renderCarrito();
+        renderProveedores();
         const vHoy = ventas.filter(v => v.dia === diaActual);
         let ing = 0, gan = 0, ivaRec = 0;
         vHoy.forEach(v => { 
@@ -1193,6 +1297,225 @@
         let csv = "FECHA,TIPO,VENTAS_TOTAL,IVA,GANANCIA_NETA\n" + cierres.map(c => `${c.fecha},${c.tipo},${c.ingresos},${c.iva},${c.ganancia}`).join("\n");
         const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `reporte_contable.csv`; a.click();
     }
+
+    // ===== MÓDULO DE PROVEEDORES =====
+    function guardarProveedor() {
+        const nombre = document.getElementById('nombreProveedor').value.trim();
+        const rif = document.getElementById('rifProveedor').value.trim();
+        const telefono = document.getElementById('telefonoProveedor').value.trim();
+        const correo = document.getElementById('correoProveedor').value.trim();
+        const vendedor = document.getElementById('vendedorProveedor').value.trim();
+        const direccion = document.getElementById('direccionProveedor').value.trim();
+        const editId = document.getElementById('editProveedorId').value;
+        
+        if(!nombre) { alert('Ingresa el nombre del proveedor'); return; }
+        
+        if(editId) {
+            const idx = proveedores.findIndex(p => p.id == editId);
+            if(idx >= 0) {
+                proveedores[idx] = { id: editId, nombre, rif, telefono, correo, vendedor, direccion, fecha: new Date().toLocaleDateString() };
+            }
+            document.getElementById('editProveedorId').value = '';
+        } else {
+            proveedores.push({ id: Date.now(), nombre, rif, telefono, correo, vendedor, direccion, fecha: new Date().toLocaleDateString() });
+        }
+        
+        limpiarFormProveedor();
+        sync();
+        render();
+    }
+
+    function limpiarFormProveedor() {
+        document.getElementById('nombreProveedor').value = '';
+        document.getElementById('rifProveedor').value = '';
+        document.getElementById('telefonoProveedor').value = '';
+        document.getElementById('correoProveedor').value = '';
+        document.getElementById('vendedorProveedor').value = '';
+        document.getElementById('direccionProveedor').value = '';
+        document.getElementById('editProveedorId').value = '';
+    }
+
+    function guardarFactura() {
+        const proveedorId = document.getElementById('proveedorFactura').value;
+        const nroFactura = document.getElementById('nroFactura').value.trim();
+        const fechaFactura = document.getElementById('fechaFactura').value;
+        const fechaVencimiento = document.getElementById('fechaVencimiento').value;
+        const producto = document.getElementById('productoFactura').value.trim();
+        const costoUnitario = parseFloat(document.getElementById('costoUnitarioFactura').value) || 0;
+        const cantidad = parseFloat(document.getElementById('cantidadFactura').value) || 1;
+        const aplicarIva = document.getElementById('ivaFactura').checked;
+        
+        if(!proveedorId || !nroFactura || !fechaFactura || !fechaVencimiento || !producto) {
+            alert('Completa todos los campos');
+            return;
+        }
+        
+        const subtotal = costoUnitario * cantidad;
+        const iva = aplicarIva ? subtotal * (ivaPorcentaje / 100) : 0;
+        const total = subtotal + iva;
+        
+        facturas.push({
+            id: Date.now(),
+            proveedorId: parseInt(proveedorId),
+            nroFactura,
+            fechaFactura,
+            fechaVencimiento,
+            producto,
+            costoUnitario,
+            cantidad,
+            subtotal,
+            iva,
+            total,
+            pagado: false,
+            fechaRegistro: new Date().toLocaleDateString()
+        });
+        
+        limpiarFormFactura();
+        sync();
+        render();
+    }
+
+    function limpiarFormFactura() {
+        document.getElementById('proveedorFactura').value = '';
+        document.getElementById('nroFactura').value = '';
+        document.getElementById('fechaFactura').value = '';
+        document.getElementById('fechaVencimiento').value = '';
+        document.getElementById('productoFactura').value = '';
+        document.getElementById('costoUnitarioFactura').value = '';
+        document.getElementById('cantidadFactura').value = '1';
+        document.getElementById('ivaFactura').checked = true;
+        document.getElementById('totalFacturaPreview').textContent = 'Bs. 0,00';
+    }
+
+    function cargarProveedorFactura() {
+        const proveedorId = document.getElementById('proveedorFactura').value;
+        if(!proveedorId) return;
+        const proveedor = proveedores.find(p => p.id == proveedorId);
+        if(proveedor) {
+            document.getElementById('productoFactura').focus();
+        }
+    }
+
+    function calcularTotalFactura() {
+        const costoUnitario = parseFloat(document.getElementById('costoUnitarioFactura').value) || 0;
+        const cantidad = parseFloat(document.getElementById('cantidadFactura').value) || 1;
+        const aplicarIva = document.getElementById('ivaFactura').checked;
+        const subtotal = costoUnitario * cantidad;
+        const iva = aplicarIva ? subtotal * (ivaPorcentaje / 100) : 0;
+        const total = subtotal + iva;
+        document.getElementById('totalFacturaPreview').textContent = 'Bs. ' + fM(total);
+    }
+
+    function marcarFacturaPagada(facturaId) {
+        const idx = facturas.findIndex(f => f.id == facturaId);
+        if(idx >= 0) {
+            facturas[idx].pagado = true;
+            sync();
+            render();
+        }
+    }
+
+    function eliminarFactura(facturaId) {
+        if(confirm('¿Eliminar esta factura?')) {
+            facturas = facturas.filter(f => f.id != facturaId);
+            sync();
+            render();
+        }
+    }
+
+    function renderProveedores() {
+        // Actualizar selector de proveedores
+        const select = document.getElementById('proveedorFactura');
+        select.innerHTML = '<option value="">-- Seleccionar --</option>';
+        proveedores.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.nombre;
+            select.appendChild(opt);
+        });
+        
+        // Alertas de vencimiento
+        const hoy = new Date();
+        const alertas = facturas.filter(f => !f.pagado).map(f => {
+            const vencimiento = new Date(f.fechaVencimiento);
+            const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
+            return { factura: f, diasRestantes };
+        }).filter(a => a.diasRestantes <= 7);
+        
+        const alertasDiv = document.getElementById('alertasVencimiento');
+        if(alertas.length === 0) {
+            alertasDiv.innerHTML = '<p style="text-align:center; color:#999;">Sin alertas de vencimiento</p>';
+        } else {
+            alertasDiv.innerHTML = alertas.map(a => {
+                const proveedor = proveedores.find(p => p.id == a.factura.proveedorId);
+                const color = a.diasRestantes <= 0 ? '#e74c3c' : '#f39c12';
+                return `<div class="item" style="border-left-color: ${color};">
+                    <div class="item-header">
+                        <span class="item-name">${proveedor?.nombre || 'Desconocido'}</span>
+                        <span class="item-quantity" style="background: ${color};">${a.diasRestantes <= 0 ? 'VENCIDO' : a.diasRestantes + ' días'}</span>
+                    </div>
+                    <div class="detail-row"><strong>Factura:</strong> ${a.factura.nroFactura}</div>
+                    <div class="detail-row"><strong>Vencimiento:</strong> ${a.factura.fechaVencimiento}</div>
+                    <div class="detail-row"><strong>Total:</strong> Bs. ${fM(a.factura.total)}</div>
+                </div>`;
+            }).join('');
+        }
+        
+        // Cuentas por pagar
+        const cuentasDiv = document.getElementById('cuentasPorPagar');
+        const cuentas = proveedores.map(p => {
+            const facturasProveedor = facturas.filter(f => f.proveedorId == p.id && !f.pagado);
+            const totalDeuda = facturasProveedor.reduce((sum, f) => sum + f.total, 0);
+            return { proveedor: p, totalDeuda, cantidad: facturasProveedor.length };
+        }).filter(c => c.totalDeuda > 0);
+        
+        if(cuentas.length === 0) {
+            cuentasDiv.innerHTML = '<p style="text-align:center; color:#999;">Sin cuentas pendientes</p>';
+        } else {
+            cuentasDiv.innerHTML = cuentas.map(c => `<div class="item">
+                <div class="item-header">
+                    <span class="item-name">${c.proveedor.nombre}</span>
+                    <span class="item-quantity" style="background: var(--danger);">${c.cantidad} factura(s)</span>
+                </div>
+                <div class="detail-row"><strong>RIF:</strong> ${c.proveedor.rif}</div>
+                <div class="detail-row"><strong>Vendedor:</strong> ${c.proveedor.vendedor}</div>
+                <div class="detail-row" style="font-weight:bold; color:var(--danger);"><strong>Total Deuda:</strong> Bs. ${fM(c.totalDeuda)}</div>
+            </div>`).join('');
+        }
+        
+        // Historial de facturas
+        const historialDiv = document.getElementById('historialFacturas');
+        if(facturas.length === 0) {
+            historialDiv.innerHTML = '<p style="text-align:center; color:#999;">Sin facturas registradas</p>';
+        } else {
+            historialDiv.innerHTML = facturas.map(f => {
+                const proveedor = proveedores.find(p => p.id == f.proveedorId);
+                return `<div class="item ${f.pagado ? 'anulada' : ''}">
+                    <div class="item-header">
+                        <span class="item-name">${proveedor?.nombre || 'Desconocido'} - ${f.nroFactura}</span>
+                        <span class="item-quantity" style="background: ${f.pagado ? '#2ecc71' : '#e74c3c'};">${f.pagado ? 'PAGADA' : 'PENDIENTE'}</span>
+                    </div>
+                    <div class="detail-row"><strong>Producto:</strong> ${f.producto}</div>
+                    <div class="detail-row"><strong>Cantidad:</strong> ${f.cantidad} x Bs. ${fM(f.costoUnitario)}</div>
+                    <div class="detail-row"><strong>Subtotal:</strong> Bs. ${fM(f.subtotal)}</div>
+                    ${f.iva > 0 ? `<div class="detail-row"><strong>IVA (16%):</strong> Bs. ${fM(f.iva)}</div>` : ''}
+                    <div class="detail-row" style="font-weight:bold; color:var(--primary);"><strong>Total:</strong> Bs. ${fM(f.total)}</div>
+                    <div class="detail-row"><strong>Vencimiento:</strong> ${f.fechaVencimiento}</div>
+                    <div class="item-actions">
+                        ${!f.pagado ? `<button class="btn-add" onclick="marcarFacturaPagada(${f.id})" style="padding:3px 8px; font-size:0.7rem;">MARCAR PAGADA</button>` : ''}
+                        <button class="btn-delete" onclick="eliminarFactura(${f.id})" style="padding:3px 8px; font-size:0.7rem;">ELIMINAR</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+    }
+
+    // Eventos para cálculo automático
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('costoUnitarioFactura')?.addEventListener('input', calcularTotalFactura);
+        document.getElementById('cantidadFactura')?.addEventListener('input', calcularTotalFactura);
+        document.getElementById('ivaFactura')?.addEventListener('change', calcularTotalFactura);
+    });
 
     init();
 </script>
