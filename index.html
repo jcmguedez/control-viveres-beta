@@ -27,7 +27,7 @@
 
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        .app-card { background: var(--card); width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; overflow: visible; }
+        .app-card { background: var(--card); width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
         .header-info { background: linear-gradient(135deg, var(--primary), var(--info)); color: white; padding: 15px; border-radius: 15px; margin-bottom: 20px; text-align: center; cursor: pointer; }
         .header-info h2 { margin: 0 0 10px 0; font-size: 1.2rem; }
         .header-info p { margin: 5px 0; font-size: 0.9rem; }
@@ -53,7 +53,7 @@
         .btn-danger { background: var(--danger); }
         .btn-info { background: var(--info); }
         .btn-camera { background: #9b59b6; padding: 8px 12px; font-size: 0.8rem; margin-left: 5px; }
-        .list-container { margin-top: 20px; max-height: 400px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .list-container { margin-top: 20px; max-height: 400px; overflow-y: auto; }
         .item { background: #f9f9f9; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid var(--primary); position: relative; }
         .item.alert { border-left-color: var(--danger); background: #fff5f5; }
         .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -393,11 +393,9 @@
         </div>
         <div class="input-group">
             <label>Nombre del Producto</label>
-            <div style="position: relative;">
-                <input type="text" id="productoFactura" placeholder="Nombre del producto o escáner" autocomplete="off" onkeyup="filtrarProductosProveedores()">
-                <div id="listaSugerenciasProveedores" style="display:none; position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 10px; margin-top: 5px; background: white; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); -webkit-overflow-scrolling: touch;"></div>
-            </div>
-            
+            <input type="text" id="productoFactura" placeholder="Empieza a escribir para ver sugerencias..." list="productosInventario" autocomplete="off">
+            <datalist id="productosInventario"></datalist>
+            <small id="productoSugerencia" style="color: #27ae60; display: none; margin-top: 5px;">✓ Producto encontrado en inventario</small>
         </div>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
             <div style="flex:1;">
@@ -1081,28 +1079,14 @@
 
     function onScanSuccessProveedores(decodedText) {
         document.getElementById('skuFactura').value = decodedText;
+        // Búsqueda EXACTA primero, luego flexible
         const codigoLimpio = decodedText.replace(/\s/g, '');
         
-        // Búsqueda exacta
+        // Intenta búsqueda exacta primero
         let producto = items.find(i => {
             const codigoInventario = (i.codigoBarras || '').replace(/\s/g, '');
             return codigoInventario === codigoLimpio;
         });
-        
-        if(producto) {
-            document.getElementById('productoFactura').value = producto.nombre;
-            document.getElementById('costoUnitarioFactura').value = (producto.costo * tasaDolar).toFixed(2);
-            document.getElementById('qr-status-proveedores').textContent = '✓ ' + producto.nombre;
-            document.getElementById('qr-status-proveedores').style.color = '#27ae60';
-        } else {
-            document.getElementById('productoFactura').value = '';
-            document.getElementById('costoUnitarioFactura').value = '';
-            document.getElementById('qr-status-proveedores').textContent = '⚠️ Código: ' + decodedText;
-            document.getElementById('qr-status-proveedores').style.color = '#f39c12';
-        }
-        
-        setTimeout(() => closeCameraProveedores(), 500);
-    });
         
         // Si no encuentra exacto, busca parcial (pero solo si tiene código)
         if(!producto && codigoLimpio.length >= 5) {
@@ -1522,53 +1506,54 @@
         
         if(productoDuplicado) {
             alertaDiv.innerHTML = `<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 8px; margin-top: 8px; color: #856404; font-size: 0.9rem;">
-                ⚠️ <strong>Producto existente:</strong> ${productoDuplicado.nombre} (Stock: ${productoDuplicado.cantidad})
+                ⚠️ <strong>Producto existente:</strong> ${productoDuplicado.nombre} (Stock: ${productoDuplicado.stock})
             </div>`;
         } else {
             alertaDiv.innerHTML = '';
         }
     }
 
-        function filtrarProductosProveedores() {
-        const input = document.getElementById('productoFactura').value.toLowerCase().trim();
-        const listaSugerencias = document.getElementById('listaSugerenciasProveedores');
+    function actualizarSugerenciasProductos() {
+        const datalist = document.getElementById('productosInventario');
+        datalist.innerHTML = '';
         
-        if(input.length === 0) {
-            listaSugerencias.style.display = 'none';
-            return;
-        }
-        
-        const productosFiltered = items.filter(item => 
-            item.nombre.toLowerCase().includes(input)
-        );
-        
-        if(productosFiltered.length === 0) {
-            listaSugerencias.style.display = 'none';
-            return;
-        }
-        
-        listaSugerencias.innerHTML = '';
-        productosFiltered.forEach(producto => {
-            const div = document.createElement('div');
-            div.style.cssText = 'padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: white;';
-            div.innerHTML = `<strong>${producto.nombre}</strong><br><small style="color: #666;">SKU: ${producto.codigoBarras || 'N/A'} | Costo: Bs. ${(producto.costo * tasaDolar).toFixed(2)}</small>`;
-            div.onmouseover = () => div.style.background = '#f5f5f5';
-            div.onmouseout = () => div.style.background = 'white';
-            div.onclick = () => seleccionarProductoProveedores(producto);
-            listaSugerencias.appendChild(div);
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.nombre;
+            option.dataset.id = item.id;
+            option.dataset.sku = item.codigoBarras || '';
+            option.dataset.costo = item.costo || 0;
+            datalist.appendChild(option);
         });
+    }
+    
+    function onProductoFacturaChange() {
+        const nombreProducto = document.getElementById('productoFactura').value.trim();
+        const datalist = document.getElementById('productosInventario');
+        const options = datalist.querySelectorAll('option');
         
-        listaSugerencias.style.display = 'block';
+        let productoEncontrado = null;
+        for(let opt of options) {
+            if(opt.value.toLowerCase() === nombreProducto.toLowerCase()) {
+                productoEncontrado = {
+                    nombre: opt.value,
+                    costo: parseFloat(opt.dataset.costo),
+                    sku: opt.dataset.sku
+                };
+                break;
+            }
+        }
+        
+        if(productoEncontrado) {
+            document.getElementById('costoUnitarioFactura').value = productoEncontrado.costo.toFixed(2);
+            document.getElementById('skuFactura').value = productoEncontrado.sku || '';
+            document.getElementById('productoSugerencia').style.display = 'block';
+        } else {
+            document.getElementById('productoSugerencia').style.display = 'none';
+        }
     }
-    
-    function seleccionarProductoProveedores(producto) {
-        document.getElementById('productoFactura').value = producto.nombre;
-        document.getElementById('skuFactura').value = producto.codigoBarras || '';
-        document.getElementById('costoUnitarioFactura').value = (producto.costo * tasaDolar).toFixed(2);
-        document.getElementById('listaSugerenciasProveedores').style.display = 'none';
-    }
-    
-        function anadirProductoFactura() {
+
+    function anadirProductoFactura() {
         const proveedorId = document.getElementById('proveedorFactura').value;
         const nroFactura = document.getElementById('nroFactura').value;
         const sku = document.getElementById('skuFactura').value;
@@ -1826,7 +1811,7 @@
         document.getElementById('ivaFactura')?.addEventListener('change', calcularTotalFactura);
         document.getElementById('productoFactura')?.addEventListener('input', validarProductoDuplicado);
         document.getElementById('skuFactura')?.addEventListener('input', validarProductoDuplicado);
-        // document.getElementById('productoFactura')?.addEventListener('change', onProductoFacturaChange);
+        document.getElementById('productoFactura')?.addEventListener('change', onProductoFacturaChange);
     });
 
     init();
