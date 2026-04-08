@@ -383,13 +383,17 @@
             </div>
         </div>
         <div class="input-group">
-            <label>Producto</label>
+            <label>Código de Barras (SKU)</label>
             <div class="camera-container">
-                <input type="text" id="productoFactura" placeholder="Nombre del producto" class="search-input" style="margin-bottom: 0;">
+                <input type="text" id="skuFactura" placeholder="Escanea o escribe el código" class="search-input" style="margin-bottom: 0;">
                 <button class="btn-camera" onclick="toggleCameraProveedores()">📷 ESCANEAR</button>
             </div>
             <div id="qr-reader-proveedores" style="display:none; margin-top:10px;"></div>
             <div class="qr-reader-status" id="qr-status-proveedores"></div>
+        </div>
+        <div class="input-group">
+            <label>Nombre del Producto</label>
+            <input type="text" id="productoFactura" placeholder="Nombre del producto">
         </div>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
             <div style="flex:1;">
@@ -1070,14 +1074,15 @@
     }
 
     function onScanSuccessProveedores(decodedText) {
+        document.getElementById('skuFactura').value = decodedText;
         const producto = items.find(i => i.codigoBarras === decodedText);
         if(producto) {
             document.getElementById('productoFactura').value = producto.nombre;
             document.getElementById('costoUnitarioFactura').value = (producto.costo * tasaDolar).toFixed(2);
             document.getElementById('qr-status-proveedores').textContent = 'Producto encontrado: ' + producto.nombre;
         } else {
-            document.getElementById('productoFactura').value = decodedText;
-            document.getElementById('qr-status-proveedores').textContent = 'Codigo: ' + decodedText + ' (no en inventario)';
+            document.getElementById('productoFactura').value = '';
+            document.getElementById('qr-status-proveedores').textContent = 'Codigo: ' + decodedText + ' (nuevo producto)';
         }
         
         setTimeout(() => closeCameraProveedores(), 500);
@@ -1451,6 +1456,7 @@
     function anadirProductoFactura() {
         const proveedorId = document.getElementById('proveedorFactura').value;
         const nroFactura = document.getElementById('nroFactura').value;
+        const sku = document.getElementById('skuFactura').value;
         const producto = document.getElementById('productoFactura').value;
         const costoUnitario = parseFloat(document.getElementById('costoUnitarioFactura').value);
         const cantidad = parseFloat(document.getElementById('cantidadFactura').value);
@@ -1466,6 +1472,7 @@
         
         carritoFacturaTemp.push({
             id: Date.now(),
+            sku: sku,
             producto: producto,
             costoUnitario: costoUnitario,
             cantidad: cantidad,
@@ -1475,12 +1482,13 @@
             aplicaIva: aplicarIva
         });
         
+        document.getElementById('skuFactura').value = '';
         document.getElementById('productoFactura').value = '';
         document.getElementById('costoUnitarioFactura').value = '';
         document.getElementById('cantidadFactura').value = '1';
         document.getElementById('ivaFactura').checked = true;
         document.getElementById('totalFacturaPreview').textContent = 'Bs. 0,00';
-        document.getElementById('productoFactura').focus();
+        document.getElementById('skuFactura').focus();
         
         renderCarritoFactura();
     }
@@ -1493,7 +1501,7 @@
             totalGeneral += p.total;
             return `<div class="item" style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="flex: 1;">
-                    <b>${p.producto}</b><br>
+                    <b>${p.producto}</b> ${p.sku ? '<small style="color: #666;">[SKU: ' + p.sku + ']</small>' : ''}<br>
                     <small>Costo: Bs. ${fM(p.costoUnitario)} x ${p.cantidad} = Bs. ${fM(p.subtotal)}</small>
                     ${p.aplicaIva ? '<br><small style="color: var(--warning);">IVA: Bs. ' + fM(p.iva) + '</small>' : ''}
                 </div>
@@ -1562,6 +1570,7 @@
         document.getElementById('nroFactura').value = '';
         document.getElementById('fechaFactura').value = '';
         document.getElementById('fechaVencimiento').value = '';
+        document.getElementById('skuFactura').value = '';
         document.getElementById('productoFactura').value = '';
         document.getElementById('costoUnitarioFactura').value = '';
         document.getElementById('cantidadFactura').value = '1';
