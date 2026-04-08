@@ -27,7 +27,7 @@
 
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        .app-card { background: var(--card); width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
+        .app-card { background: var(--card); width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; overflow: visible; }
         .header-info { background: linear-gradient(135deg, var(--primary), var(--info)); color: white; padding: 15px; border-radius: 15px; margin-bottom: 20px; text-align: center; cursor: pointer; }
         .header-info h2 { margin: 0 0 10px 0; font-size: 1.2rem; }
         .header-info p { margin: 5px 0; font-size: 0.9rem; }
@@ -53,7 +53,7 @@
         .btn-danger { background: var(--danger); }
         .btn-info { background: var(--info); }
         .btn-camera { background: #9b59b6; padding: 8px 12px; font-size: 0.8rem; margin-left: 5px; }
-        .list-container { margin-top: 20px; max-height: 400px; overflow-y: auto; }
+        .list-container { margin-top: 20px; max-height: 400px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .item { background: #f9f9f9; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid var(--primary); position: relative; }
         .item.alert { border-left-color: var(--danger); background: #fff5f5; }
         .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -393,8 +393,10 @@
         </div>
         <div class="input-group">
             <label>Nombre del Producto</label>
-            <input type="text" id="productoFactura" placeholder="Nombre del producto o escáner" autocomplete="off" onkeyup="filtrarProductosProveedores()">
-            <div id="listaSugerenciasProveedores" class="list-container" style="display:none; max-height: 150px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; margin-top: 5px; background: white; z-index: 100;"></div>
+            <div style="position: relative;">
+                <input type="text" id="productoFactura" placeholder="Nombre del producto o escáner" autocomplete="off" onkeyup="filtrarProductosProveedores()">
+                <div id="listaSugerenciasProveedores" style="display:none; position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 10px; margin-top: 5px; background: white; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); -webkit-overflow-scrolling: touch;"></div>
+            </div>
             
         </div>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
@@ -1520,7 +1522,7 @@
         
         if(productoDuplicado) {
             alertaDiv.innerHTML = `<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 8px; margin-top: 8px; color: #856404; font-size: 0.9rem;">
-                ⚠️ <strong>Producto existente:</strong> ${productoDuplicado.nombre} (Stock: ${productoDuplicado.stock})
+                ⚠️ <strong>Producto existente:</strong> ${productoDuplicado.nombre} (Stock: ${productoDuplicado.cantidad})
             </div>`;
         } else {
             alertaDiv.innerHTML = '';
@@ -1824,7 +1826,7 @@
         document.getElementById('ivaFactura')?.addEventListener('change', calcularTotalFactura);
         document.getElementById('productoFactura')?.addEventListener('input', validarProductoDuplicado);
         document.getElementById('skuFactura')?.addEventListener('input', validarProductoDuplicado);
-        document.getElementById('productoFactura')?.addEventListener('change', onProductoFacturaChange);
+        // document.getElementById('productoFactura')?.addEventListener('change', onProductoFacturaChange);
     });
 
     init();
