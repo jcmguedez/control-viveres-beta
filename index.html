@@ -594,7 +594,8 @@
                     qrbox: { width: 250, height: 250 }, 
                     rememberLastUsedCamera: true, 
                     showTorchButtonIfSupported: true,
-                    aspectRatio: 1.0
+                    aspectRatio: 1.0,
+                    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.EAN_13]
                 },
                 false
             );
@@ -602,11 +603,8 @@
             // Personalizar textos de botones después de renderizar
             scannerInventario.render(onScanSuccessInventario, onScanErrorInventario);
             
-            // Aplicar personalización múltiples veces para asegurar que se aplique
-            setTimeout(() => personalizarBotonesEscaner('qr-reader-inventario'), 100);
-            setTimeout(() => personalizarBotonesEscaner('qr-reader-inventario'), 300);
-            setTimeout(() => personalizarBotonesEscaner('qr-reader-inventario'), 500);
-            setTimeout(() => personalizarBotonesEscaner('qr-reader-inventario'), 1000);
+            // Aplicar personalización una sola vez después de renderizar
+            setTimeout(() => personalizarBotonesEscaner('qr-reader-inventario'), 600);
             
             cameraInventarioActive = true;
             statusDiv.textContent = '✓ Cámara activa - Escanea un código';
@@ -621,16 +619,23 @@
         const container = document.getElementById(containerId);
         if(!container) return;
         
-        // Diccionario de traducciones
+        // Diccionario de traducciones - COMPLETO
         const traducciones = {
             'start scanning': 'Iniciar Escaneo',
+            'start': 'Iniciar Escaneo',
             'stop scanning': 'Detener Escaneo',
+            'stop': 'Detener Escaneo',
             'torch on': '💡 Linterna ON',
             'torch off': '💡 Linterna OFF',
             'camera permission request': 'Solicitar Permiso de Cámara',
+            'request camera permission': 'Solicitar Permiso de Cámara',
             'select camera': 'Elegir Cámara',
             'camera facing back': 'Cámara Trasera',
-            'camera facing front': 'Cámara Frontal'
+            'camera facing front': 'Cámara Frontal',
+            'back': 'Cámara Trasera',
+            'front': 'Cámara Frontal',
+            'environment': 'Cámara Trasera',
+            'user': 'Cámara Frontal'
         };
         
         // Función para aplicar estilos y traducciones
@@ -640,12 +645,21 @@
             botones.forEach(btn => {
                 const textoOriginal = btn.textContent.toLowerCase().trim();
                 
-                // Buscar traducción
+                // Buscar traducción - MÁS AGRESIVA
+                let traducido = false;
                 for(let [ingles, espanol] of Object.entries(traducciones)) {
-                    if(textoOriginal.includes(ingles) || ingles.includes(textoOriginal)) {
+                    if(textoOriginal.includes(ingles.toLowerCase())) {
                         btn.textContent = espanol;
+                        traducido = true;
                         break;
                     }
+                }
+                
+                // Si no se tradujo, intentar con palabras clave
+                if(!traducido) {
+                    if(textoOriginal.includes('scan')) btn.textContent = 'Iniciar Escaneo';
+                    else if(textoOriginal.includes('torch')) btn.textContent = '💡 Linterna';
+                    else if(textoOriginal.includes('camera')) btn.textContent = 'Elegir Cámara';
                 }
                 
                 // Aplicar estilos
@@ -788,7 +802,8 @@
                     qrbox: { width: 250, height: 250 }, 
                     rememberLastUsedCamera: true, 
                     showTorchButtonIfSupported: true,
-                    aspectRatio: 1.0
+                    aspectRatio: 1.0,
+                    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.EAN_13]
                 },
                 false
             );
@@ -796,11 +811,8 @@
             // Personalizar textos de botones después de renderizar
             scannerVentas.render(onScanSuccessVentas, onScanErrorVentas);
             
-            // Aplicar personalización múltiples veces para asegurar que se aplique
-            setTimeout(() => personalizarBotonesEscaner('qr-reader-ventas'), 100);
-            setTimeout(() => personalizarBotonesEscaner('qr-reader-ventas'), 300);
-            setTimeout(() => personalizarBotonesEscaner('qr-reader-ventas'), 500);
-            setTimeout(() => personalizarBotonesEscaner('qr-reader-ventas'), 1000);
+            // Aplicar personalización una sola vez después de renderizar
+            setTimeout(() => personalizarBotonesEscaner('qr-reader-ventas'), 600);
             
             cameraVentasActive = true;
             statusDiv.textContent = '✓ Cámara activa - Escanea un código de producto';
