@@ -393,14 +393,20 @@
         </div>
         <div class="input-group">
             <label>Nombre del Producto</label>
-            <input type="text" id="productoFactura" placeholder="Empieza a escribir para ver sugerencias..." list="productosInventario" autocomplete="off">
-            <datalist id="productosInventario"></datalist>
-            <small id="productoSugerencia" style="color: #27ae60; display: none; margin-top: 5px;">✓ Producto encontrado en inventario</small>
+            <input type="text" id="productoFactura" placeholder="Busca producto..." oninput="buscarProductoFactura()" autocomplete="off">
+            <div id="searchResultsFactura" class="search-results"></div>
+            <small id="productoSugerencia" style="color: #27ae60; display: none; margin-top: 5px;">✓ Producto seleccionado</small>
         </div>
-        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
-            <div style="flex:1;">
-                <label>Costo Unitario (Bs)</label>
-                <input type="number" id="costoUnitarioFactura" step="0.01" placeholder="0.00">
+        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px; align-items: flex-end;">
+            <div style="flex:2;">
+                <label>Costo de Compra (por Unidad/Kg)</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="number" id="costoUnitarioFactura" placeholder="0.00" step="0.01">
+                    <select id="monedaCostoFactura" style="width:70px; padding:10px;">
+                        <option value="BS" selected>Bs</option>
+                        <option value="USD">$</option>
+                    </select>
+                </div>
             </div>
             <div style="flex:1;">
                 <label>Cantidad</label>
@@ -1099,15 +1105,19 @@
         if(producto && producto.codigoBarras) {
             document.getElementById('productoFactura').value = producto.nombre;
             document.getElementById('costoUnitarioFactura').value = (producto.costo * tasaDolar).toFixed(2);
+            document.getElementById('monedaCostoFactura').value = 'BS';
             document.getElementById('qr-status-proveedores').textContent = '✓ Producto encontrado: ' + producto.nombre;
             document.getElementById('qr-status-proveedores').style.color = '#27ae60';
             document.getElementById('productoSugerencia').style.display = 'block';
+            document.getElementById('searchResultsFactura').innerHTML = '';
         } else {
             document.getElementById('productoFactura').value = '';
             document.getElementById('costoUnitarioFactura').value = '';
+            document.getElementById('monedaCostoFactura').value = 'BS';
             document.getElementById('qr-status-proveedores').textContent = '⚠️ Codigo: ' + decodedText + ' (nuevo producto - ingresa nombre)';
             document.getElementById('qr-status-proveedores').style.color = '#f39c12';
             document.getElementById('productoSugerencia').style.display = 'none';
+            document.getElementById('searchResultsFactura').innerHTML = '';
         }
         
         setTimeout(() => closeCameraProveedores(), 500);
@@ -1527,30 +1537,31 @@
         });
     }
     
-    function onProductoFacturaChange() {
-        const nombreProducto = document.getElementById('productoFactura').value.trim();
-        const datalist = document.getElementById('productosInventario');
-        const options = datalist.querySelectorAll('option');
-        
-        let productoEncontrado = null;
-        for(let opt of options) {
-            if(opt.value.toLowerCase() === nombreProducto.toLowerCase()) {
-                productoEncontrado = {
-                    nombre: opt.value,
-                    costo: parseFloat(opt.dataset.costo),
-                    sku: opt.dataset.sku
-                };
-                break;
-            }
-        }
-        
-        if(productoEncontrado) {
-            document.getElementById('costoUnitarioFactura').value = productoEncontrado.costo.toFixed(2);
-            document.getElementById('skuFactura').value = productoEncontrado.sku || '';
-            document.getElementById('productoSugerencia').style.display = 'block';
-        } else {
-            document.getElementById('productoSugerencia').style.display = 'none';
-        }
+    function buscarProductoFactura() {
+        const q = document.getElementById('productoFactura').value.toLowerCase();
+        const res = document.getElementById('searchResultsFactura');
+        if(!q) return res.innerHTML = '';
+        res.innerHTML = items.filter(i => i.nombre.toLowerCase().includes(q)).map(i => `
+            <div class="search-result-item" onclick="seleccionarProductoFactura(${i.id})">
+                <div>
+                    <b>${i.nombre}</b> ${i.codigoBarras ? '<small>['+i.codigoBarras+']</small>' : ''}<br>
+                    <small>Costo actual: $ ${fM(i.costo)} / Eqv: Bs. ${fM(i.costo * tasaDolar)}</small>
+                </div>
+                <button class="btn-add-search">ELEGIR</button>
+            </div>
+        `).join('');
+    }
+
+    function seleccionarProductoFactura(id) {
+        const i = items.find(x => x.id === id);
+        if(!i) return;
+        document.getElementById('productoFactura').value = i.nombre;
+        document.getElementById('skuFactura').value = i.codigoBarras || '';
+        document.getElementById('costoUnitarioFactura').value = (i.costo * tasaDolar).toFixed(2);
+        document.getElementById('monedaCostoFactura').value = 'BS';
+        document.getElementById('searchResultsFactura').innerHTML = '';
+        document.getElementById('productoSugerencia').style.display = 'block';
+        document.getElementById('cantidadFactura').focus();
     }
 
     function anadirProductoFactura() {
@@ -1558,15 +1569,20 @@
         const nroFactura = document.getElementById('nroFactura').value;
         const sku = document.getElementById('skuFactura').value;
         const producto = document.getElementById('productoFactura').value;
-        const costoUnitario = parseFloat(document.getElementById('costoUnitarioFactura').value);
+        let costoUnitario = parseFloat(document.getElementById('costoUnitarioFactura').value);
+        const moneda = document.getElementById('monedaCostoFactura').value;
         const cantidad = parseFloat(document.getElementById('cantidadFactura').value);
         const aplicarIva = document.getElementById('ivaFactura').checked;
         
         if(!proveedorId || !nroFactura || !producto || isNaN(costoUnitario) || isNaN(cantidad)) {
             return alert('Datos incompletos');
         }
+
+        // Convertir a dólares para el almacenamiento interno (si está en Bs)
+        const costoUSD = moneda === 'BS' ? costoUnitario / tasaDolar : costoUnitario;
+        const costoBS = moneda === 'BS' ? costoUnitario : costoUnitario * tasaDolar;
         
-        const subtotal = costoUnitario * cantidad;
+        const subtotal = costoBS * cantidad;
         const ivaAmount = aplicarIva ? subtotal * (ivaPorcentaje / 100) : 0;
         const total = subtotal + ivaAmount;
         
@@ -1574,7 +1590,8 @@
             id: Date.now(),
             sku: sku,
             producto: producto,
-            costoUnitario: costoUnitario,
+            costoUnitario: costoBS,
+            costoUSD: costoUSD,
             cantidad: cantidad,
             subtotal: subtotal,
             iva: ivaAmount,
@@ -1645,6 +1662,32 @@
             pagado: false,
             fechaRegistro: new Date().toLocaleDateString()
         });
+
+        // Actualizar Inventario con los nuevos productos/costos
+        carritoFacturaTemp.forEach(p => {
+            const idx = items.findIndex(i => (p.sku && i.codigoBarras === p.sku) || i.nombre.toLowerCase() === p.producto.toLowerCase());
+            if(idx !== -1) {
+                // Producto existe: actualizar stock y costo (en USD)
+                items[idx].cantidad += p.cantidad;
+                items[idx].costo = p.costoUSD;
+                // Recalcular precio de venta basado en el nuevo costo y el beneficio previo
+                items[idx].precioVenta = items[idx].costo * (1 + (items[idx].beneficio || 30)/100);
+            } else {
+                // Producto nuevo: añadir al inventario
+                items.push({
+                    id: Date.now() + Math.random(),
+                    nombre: p.producto,
+                    costo: p.costoUSD,
+                    beneficio: 30,
+                    precioVenta: p.costoUSD * 1.30,
+                    cantidad: p.cantidad,
+                    unidad: 'UND',
+                    exento: !p.aplicaIva,
+                    stockMin: stockMinimoGlobal,
+                    codigoBarras: p.sku
+                });
+            }
+        });
         
         carritoFacturaTemp = [];
         limpiarFormFactura();
@@ -1673,9 +1716,12 @@
         document.getElementById('skuFactura').value = '';
         document.getElementById('productoFactura').value = '';
         document.getElementById('costoUnitarioFactura').value = '';
+        document.getElementById('monedaCostoFactura').value = 'BS';
         document.getElementById('cantidadFactura').value = '1';
         document.getElementById('ivaFactura').checked = true;
         document.getElementById('totalFacturaPreview').textContent = 'Bs. 0,00';
+        document.getElementById('searchResultsFactura').innerHTML = '';
+        document.getElementById('productoSugerencia').style.display = 'none';
     }
 
     function cargarProveedorFactura() {
@@ -1688,10 +1734,15 @@
     }
 
     function calcularTotalFactura() {
-        const costoUnitario = parseFloat(document.getElementById('costoUnitarioFactura').value) || 0;
+        let costoUnitario = parseFloat(document.getElementById('costoUnitarioFactura').value) || 0;
+        const moneda = document.getElementById('monedaCostoFactura').value;
         const cantidad = parseFloat(document.getElementById('cantidadFactura').value) || 1;
         const aplicarIva = document.getElementById('ivaFactura').checked;
-        const subtotal = costoUnitario * cantidad;
+        
+        // Convertir a Bs para la previsualización del total
+        const costoBS = moneda === 'BS' ? costoUnitario : costoUnitario * tasaDolar;
+        
+        const subtotal = costoBS * cantidad;
         const iva = aplicarIva ? subtotal * (ivaPorcentaje / 100) : 0;
         const total = subtotal + iva;
         document.getElementById('totalFacturaPreview').textContent = 'Bs. ' + fM(total);
@@ -1809,9 +1860,10 @@
         document.getElementById('costoUnitarioFactura')?.addEventListener('input', calcularTotalFactura);
         document.getElementById('cantidadFactura')?.addEventListener('input', calcularTotalFactura);
         document.getElementById('ivaFactura')?.addEventListener('change', calcularTotalFactura);
+        document.getElementById('monedaCostoFactura')?.addEventListener('change', calcularTotalFactura);
         document.getElementById('productoFactura')?.addEventListener('input', validarProductoDuplicado);
         document.getElementById('skuFactura')?.addEventListener('input', validarProductoDuplicado);
-        document.getElementById('productoFactura')?.addEventListener('change', onProductoFacturaChange);
+
     });
 
     init();
