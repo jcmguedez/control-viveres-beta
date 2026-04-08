@@ -98,6 +98,20 @@
         .exento-badge { font-size: 0.6rem; background: #9b59b6; color: white; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
         .barcode-badge { font-size: 0.65rem; background: #16a085; color: white; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
         .camera-container { display: flex; gap: 5px; align-items: center; margin-bottom: 10px; }
+        .collapsible-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: linear-gradient(135deg, var(--primary), var(--info)); color: white; padding: 12px 15px; border-radius: 10px; margin-bottom: 10px; user-select: none; transition: all 0.3s; }
+        .collapsible-header:hover { transform: translateX(5px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .collapsible-header h2 { margin: 0; font-size: 1rem; color: white; }
+        .collapse-icon { font-size: 0.9rem; transition: transform 0.3s; }
+        .collapse-icon.rotate-icon { transform: rotate(180deg); }
+        .collapsible-content { display: none; max-height: 0; overflow: hidden; transition: all 0.3s ease; }
+        .collapsible-content.active { display: block; max-height: 10000px; }
+        .search-container { position: relative; width: 100%; }
+        .search-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid var(--primary); border-top: none; border-radius: 0 0 10px 10px; max-height: 200px; overflow-y: auto; display: none; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .search-dropdown div { padding: 10px 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; }
+        .search-dropdown div:hover { background: #f0f0f0; }
+        .search-dropdown div:last-child { border-bottom: none; }
+        .search-dropdown strong { display: block; color: var(--text); font-weight: 600; }
+        .search-dropdown small { display: block; color: #999; font-size: 0.8rem; margin-top: 3px; }
         #qr-reader { width: 100%; max-width: 400px; margin: 10px auto; }
         .qr-reader-status { text-align: center; font-size: 0.85rem; color: #666; margin: 10px 0; }
         #qr-reader-inventario, #qr-reader-ventas { width: 100%; margin: 10px 0; }
@@ -207,88 +221,104 @@
             </div>
         </div>
 
-        <h2 id="formTitle">➕ Cargar Producto</h2>
-        <input type="hidden" id="editId">
-        <input type="text" id="nombre" placeholder="Nombre del producto" class="search-input">
-        
-        <!-- CAMPO CÓDIGO DE BARRAS (SKU) -->
-        <div class="input-group">
-            <label>Código de Barras (SKU)</label>
-            <div class="camera-container">
-                <input type="text" id="codigoBarras" placeholder="Escanea o ingresa código..." class="search-input" style="margin-bottom: 0;">
-                <button class="btn-camera" onclick="toggleCameraInventario()">📷 ESCANEAR</button>
-            </div>
-            <div id="qr-reader-inventario" style="display:none; margin-top:10px;"></div>
-            <div class="qr-reader-status" id="qr-status-inventario"></div>
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2 id="formTitle">➕ Cargar Producto</h2>
+            <span class="collapse-icon">▼</span>
         </div>
+        <div class="collapsible-content active">
+            <input type="hidden" id="editId">
+            <input type="text" id="nombre" placeholder="Nombre del producto" class="search-input">
+            
+            <!-- CAMPO CÓDIGO DE BARRAS (SKU) -->
+            <div class="input-group">
+                <label>Código de Barras (SKU)</label>
+                <div class="camera-container">
+                    <input type="text" id="codigoBarras" placeholder="Escanea o ingresa código..." class="search-input" style="margin-bottom: 0;">
+                    <button class="btn-camera" onclick="toggleCameraInventario()">📷 ESCANEAR</button>
+                </div>
+                <div id="qr-reader-inventario" style="display:none; margin-top:10px;"></div>
+                <div class="qr-reader-status" id="qr-status-inventario"></div>
+            </div>
 
-        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px; align-items: flex-end;">
-            <div style="flex:2;">
-                <label>Costo de Compra (por Unidad/Kg)</label>
-                <div style="display:flex; gap:5px;">
-                    <input type="number" id="costo" placeholder="0.00" step="0.01" oninput="calcularCostoDual()">
-                    <select id="monedaCosto" style="width:70px; padding:10px;" onchange="calcularCostoDual()">
-                        <option value="BS" selected>Bs</option>
-                        <option value="USD">$</option>
+            <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px; align-items: flex-end;">
+                <div style="flex:2;">
+                    <label>Costo de Compra (por Unidad/Kg)</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" id="costo" placeholder="0.00" step="0.01" oninput="calcularCostoDual()">
+                        <select id="monedaCosto" style="width:70px; padding:10px;" onchange="calcularCostoDual()">
+                            <option value="BS" selected>Bs</option>
+                            <option value="USD">$</option>
+                        </select>
+                    </div>
+                    <div id="costoDual" class="costo-preview">Eqv: $ 0,00</div>
+                </div>
+                <div style="flex:1;">
+                    <label>Beneficio %</label>
+                    <input type="number" id="beneficio" value="30" placeholder="30">
+                </div>
+            </div>
+
+            <div class="input-row" style="display:flex; gap:10px; margin-bottom:15px;">
+                <div style="flex:1;">
+                    <label>Unidad</label>
+                    <select id="unidad">
+                        <option value="UND">Unidad (UND)</option>
+                        <option value="KG">Kilogramo (KG)</option>
                     </select>
                 </div>
-                <div id="costoDual" class="costo-preview">Eqv: $ 0,00</div>
+                <div style="flex:1;">
+                    <label>Cantidad/Peso</label>
+                    <input type="number" id="cantidad" placeholder="Cant." value="1" step="0.001">
+                </div>
             </div>
-            <div style="flex:1;">
-                <label>Beneficio %</label>
-                <input type="number" id="beneficio" value="30" placeholder="30">
-            </div>
-        </div>
 
-        <div class="input-row" style="display:flex; gap:10px; margin-bottom:15px;">
-            <div style="flex:1;">
-                <label>Unidad</label>
-                <select id="unidad">
-                    <option value="UND">Unidad (UND)</option>
-                    <option value="KG">Kilogramo (KG)</option>
-                </select>
+            <div class="switch-container" style="margin-bottom:15px;">
+                <span style="font-size:0.9rem; font-weight:bold;">Producto Exento de IVA</span>
+                <label class="switch">
+                    <input type="checkbox" id="exentoIVA">
+                    <span class="slider"></span>
+                </label>
             </div>
-            <div style="flex:1;">
-                <label>Cantidad/Peso</label>
-                <input type="number" id="cantidad" placeholder="Cant." value="1" step="0.001">
+
+            <div class="btn-grid">
+                <button class="btn-add" id="btnGuardar" onclick="addItem()">CARGAR AL INVENTARIO</button>
+                <button class="btn-danger" id="btnCancelarEdit" onclick="limpiarForm()" style="display:none;">CANCELAR</button>
             </div>
         </div>
 
-        <div class="switch-container" style="margin-bottom:15px;">
-            <span style="font-size:0.9rem; font-weight:bold;">Producto Exento de IVA</span>
-            <label class="switch">
-                <input type="checkbox" id="exentoIVA">
-                <span class="slider"></span>
-            </label>
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>📦 Inventario Actual</h2>
+            <span class="collapse-icon">▼</span>
         </div>
-
-        <div class="btn-grid">
-            <button class="btn-add" id="btnGuardar" onclick="addItem()">CARGAR AL INVENTARIO</button>
-            <button class="btn-danger" id="btnCancelarEdit" onclick="limpiarForm()" style="display:none;">CANCELAR</button>
-        </div>
-
-        <h2>📦 Inventario Actual</h2>
-        <input type="text" id="filtroStock" class="search-input" placeholder="🔍 Buscar en Stock..." oninput="render()">
-        <div id="lista" class="list-container"></div>
-        
-        <div class="total-section">
-            <div style="font-size:0.8rem; opacity:0.9;">VALOR TOTAL INVENTARIO</div>
-            <div class="total-amount" id="totalDisplay">Bs. 0,00</div>
-            <div id="totalDisplayUSD" style="font-size:0.9rem; opacity:0.8;">$ 0,00</div>
+        <div class="collapsible-content active">
+            <input type="text" id="filtroStock" class="search-input" placeholder="🔍 Buscar en Stock..." oninput="render()">
+            <div id="lista" class="list-container"></div>
+            
+            <div class="total-section">
+                <div style="font-size:0.8rem; opacity:0.9;">VALOR TOTAL INVENTARIO</div>
+                <div class="total-amount" id="totalDisplay">Bs. 0,00</div>
+                <div id="totalDisplayUSD" style="font-size:0.9rem; opacity:0.8;">$ 0,00</div>
+            </div>
         </div>
     </div>
 
     <!-- TAB: VENTAS -->
     <div id="ventas" class="tab-content">
-        <!-- BÚSQUEDA CON ESCANEO DE CÁMARA -->
-        <div class="camera-container">
-            <input type="text" id="busquedaProducto" class="search-input" placeholder="🔍 Buscar producto o escanear código..." oninput="buscarVenta()" style="margin-bottom: 0;">
-            <button class="btn-camera" onclick="toggleCameraVentas()">📷 ESCANEAR</button>
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>🛒 Realizar Venta</h2>
+            <span class="collapse-icon">▼</span>
         </div>
-        <div id="qr-reader-ventas" style="display:none; margin-top:10px;"></div>
-        <div class="qr-reader-status" id="qr-status-ventas"></div>
-        
-        <div id="searchResults" class="search-results"></div>
+        <div class="collapsible-content active">
+            <!-- BÚSQUEDA CON ESCANEO DE CÁMARA -->
+            <div class="camera-container">
+                <input type="text" id="busquedaProducto" class="search-input" placeholder="🔍 Buscar producto o escanear código..." oninput="buscarVenta()" style="margin-bottom: 0;">
+                <button class="btn-camera" onclick="toggleCameraVentas()">📷 ESCANEAR</button>
+            </div>
+            <div id="qr-reader-ventas" style="display:none; margin-top:10px;"></div>
+            <div class="qr-reader-status" id="qr-status-ventas"></div>
+
+            <div id="searchResults" class="search-results"></div>
+        </div>
         
         <div class="switch-container">
             <span style="font-size:0.9rem; font-weight:bold;">Incluir IVA en Ticket</span>
@@ -316,67 +346,93 @@
             <button class="btn-info" onclick="abrirModalCredito()">💳 DAR CRÉDITO</button>
         </div>
         <button class="btn-danger" onclick="limpiarCarrito()" style="width:100%; margin-top:10px;">🗑️ LIMPIAR CARRITO</button>
-        <h2>📝 Ventas de Hoy</h2>
-        <div id="ventasHistorial" class="list-container"></div>
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>📝 Ventas de Hoy</h2>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="collapsible-content active">
+            <div id="ventasHistorial" class="list-container"></div>
+        </div>
     </div>
 
     <!-- TAB: CRÉDITOS -->
     <div id="creditos" class="tab-content">
-        <h2>👥 Clientes con Deuda</h2>
-        <div id="listaCreditos" class="list-container"></div>
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>👥 Clientes con Deuda</h2>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="collapsible-content active">
+            <div id="listaCreditos" class="list-container"></div>
+        </div>
     </div>
 
     <!-- TAB: PROVEEDORES -->
     <div id="proveedores" class="tab-content">
-        <h2>🏢 Registrar Proveedor</h2>
-        <input type="hidden" id="editProveedorId">
-        <div class="input-group">
-            <label>Nombre de la Empresa</label>
-            <input type="text" id="nombreProveedor" placeholder="Nombre del proveedor" class="search-input">
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>🏢 Registrar Proveedor</h2>
+            <span class="collapse-icon">▼</span>
         </div>
-        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
-            <div style="flex:1;">
-                <label>RIF</label>
-                <input type="text" id="rifProveedor" placeholder="J-12345678-9">
+        <div class="collapsible-content active">
+            <input type="hidden" id="editProveedorId">
+            <div class="input-group">
+                <label>Nombre de la Empresa</label>
+                <input type="text" id="nombreProveedor" placeholder="Nombre del proveedor" class="search-input">
             </div>
-            <div style="flex:1;">
-                <label>Telefono</label>
-                <input type="text" id="telefonoProveedor" placeholder="+58 XXX XXXX">
+            <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+                <div style="flex:1;">
+                    <label>RIF</label>
+                    <input type="text" id="rifProveedor" placeholder="J-12345678-9">
+                </div>
+                <div style="flex:1;">
+                    <label>Telefono</label>
+                    <input type="text" id="telefonoProveedor" placeholder="+58 XXX XXXX">
+                </div>
             </div>
+            <div class="input-group">
+                <label>Correo</label>
+                <input type="email" id="correoProveedor" placeholder="proveedor@email.com">
+            </div>
+            <div class="input-group">
+                <label>Vendedor</label>
+                <input type="text" id="vendedorProveedor" placeholder="Nombre del vendedor">
+            </div>
+            <div class="input-group">
+                <label>Direccion</label>
+                <input type="text" id="direccionProveedor" placeholder="Direccion completa">
+            </div>
+            <button class="btn-add" onclick="guardarProveedor()" style="width:100%; margin-bottom:10px;">+ GUARDAR PROVEEDOR</button>
+            <button class="btn-danger" onclick="limpiarFormProveedor()" style="width:100%; margin-bottom:20px;">LIMPIAR</button>
         </div>
-        <div class="input-group">
-            <label>Correo</label>
-            <input type="email" id="correoProveedor" placeholder="proveedor@email.com">
-        </div>
-        <div class="input-group">
-            <label>Vendedor</label>
-            <input type="text" id="vendedorProveedor" placeholder="Nombre del vendedor">
-        </div>
-        <div class="input-group">
-            <label>Direccion</label>
-            <input type="text" id="direccionProveedor" placeholder="Direccion completa">
-        </div>
-        <button class="btn-add" onclick="guardarProveedor()" style="width:100%; margin-bottom:10px;">+ GUARDAR PROVEEDOR</button>
-        <button class="btn-danger" onclick="limpiarFormProveedor()" style="width:100%; margin-bottom:20px;">LIMPIAR</button>
 
         <datalist id="productosInventario"></datalist>
 
-        <h2>📋 Proveedores Registrados</h2>
-        <div id="listaProveedoresRegistrados" class="list-container" style="max-height: 300px; overflow-y: auto; margin-bottom:20px;"></div>
-
-        <h2>📋 Registrar Factura de Compra</h2>
-        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
-            <div style="flex:1;">
-                <label>Proveedor</label>
-                <select id="proveedorFactura" onchange="cargarProveedorFactura()">
-                    <option value="">-- Seleccionar --</option>
-                </select>
-            </div>
-            <div style="flex:1;">
-                <label>Nro Factura</label>
-                <input type="text" id="nroFactura" placeholder="F-001">
-            </div>
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>📋 Proveedores Registrados</h2>
+            <span class="collapse-icon">▼</span>
         </div>
+        <div class="collapsible-content">
+            <div id="listaProveedoresRegistrados" class="list-container" style="max-height: 300px; overflow-y: auto; margin-bottom:20px;"></div>
+        </div>
+
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>📋 Registrar Factura de Compra</h2>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="collapsible-content active">
+            <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+                <div style="flex:1;">
+                    <label>Proveedor</label>
+                    <div class="search-container">
+                        <input type="text" id="proveedorSearch" placeholder="Escribe para buscar..." oninput="filtrarProveedores(this.value)" onfocus="filtrarProveedores(this.value)">
+                        <input type="hidden" id="proveedorFactura">
+                        <div id="proveedorDropdown" class="search-dropdown"></div>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <label>Nro Factura</label>
+                    <input type="text" id="nroFactura" placeholder="F-001">
+                </div>
+            </div>
         <div id="infoProveedorSeleccionado" style="display:none; margin-bottom:10px;"></div>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
             <div style="flex:1;">
@@ -419,6 +475,16 @@
                 <input type="number" id="cantidadFactura" step="0.01" placeholder="1">
             </div>
         </div>
+        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1;">
+                <label>Beneficio %</label>
+                <input type="number" id="beneficioFactura" value="30" placeholder="30">
+            </div>
+            <div style="flex:1;">
+                <label>Stock Mínimo</label>
+                <input type="number" id="stockMinFactura" placeholder="5">
+            </div>
+        </div>
         <div class="input-group">
             <label>Aplicar IVA?</label>
             <div class="switch-container">
@@ -449,19 +515,38 @@
             <button class="btn-secondary" onclick="cancelarFactura()" style="flex: 1; background: #e74c3c; padding: 15px; font-weight: bold; font-size: 1.1rem; border-radius: 8px; border: 2px solid #c0392b; color: white; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">✕ CANCELAR</button>
         </div>
 
-        <h2>🚨 Alertas de Vencimiento</h2>
-        <div id="alertasVencimiento" class="list-container"></div>
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>🚨 Alertas de Vencimiento</h2>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="collapsible-content active">
+            <div id="alertasVencimiento" class="list-container"></div>
+        </div>
 
-        <h2>📊 Cuentas por Pagar</h2>
-        <div id="cuentasPorPagar" class="list-container"></div>
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>📊 Cuentas por Pagar</h2>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="collapsible-content active">
+            <div id="cuentasPorPagar" class="list-container"></div>
+        </div>
 
-        <h2>📝 Historial de Facturas</h2>
-        <div id="historialFacturas" class="list-container"></div>
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>📝 Historial de Facturas</h2>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="collapsible-content active">
+            <div id="historialFacturas" class="list-container"></div>
+        </div>
     </div>
 
     <!-- TAB: REPORTES -->
     <div id="reportes" class="tab-content">
-        <h2>📊 Dashboard Control Diario</h2>
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <h2>📊 Dashboard Control Diario</h2>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="collapsible-content active">
         <div class="stats-box" style="border-left-color: var(--info);">
             <div class="stats-label">TOTAL VENTAS BRUTAS</div>
             <div class="stats-value" id="ingresosTotales">Bs. 0,00</div>
@@ -487,6 +572,7 @@
         <div id="historialCierres" class="list-container"></div>
         
         <button class="btn-info" onclick="descargarReporte()" style="width:100%; margin-top:10px;">📥 DESCARGAR CSV</button>
+        </div>
     </div>
 </div>
 
@@ -532,18 +618,26 @@
     const maxIntentos = 50; // 5 segundos (50 * 100ms)
     
     function verificarLibrerias() {
-        if(typeof Html5QrcodeScanner !== 'undefined' && typeof firebase !== 'undefined') {
+        // Si estamos offline, algunas librerías de CDN podrían no cargar. 
+        // Intentamos inicializar el sistema con lo que tengamos disponible en LocalStorage.
+        const firebaseCargado = typeof firebase !== 'undefined';
+        const scannerCargado = typeof Html5QrcodeScanner !== 'undefined';
+
+        if(firebaseCargado && scannerCargado) {
             libreriasListas = true;
             console.log('✓ Librerías cargadas correctamente');
-            // Aplicar traducciones y estilos personalizados
             aplicarTraducciones();
             init();
-        } else if(intentosVerificacion < maxIntentos) {
+        } else if(intentosVerificacion < maxIntentos && navigator.onLine) {
+            // Solo reintentamos si hay internet, si no, procedemos con modo local tras unos segundos
             intentosVerificacion++;
             setTimeout(verificarLibrerias, 100);
         } else {
-            console.error('✗ Error: Las librerías no se cargaron después de 5 segundos');
-            alert('Error: No se pudieron cargar las librerías necesarias. Por favor, recarga la página.');
+            // Modo de emergencia: Cargar con lo que haya (priorizar funcionamiento offline)
+            console.warn('⚠️ Iniciando en modo local/offline limitado');
+            libreriasListas = scannerCargado;
+            if(firebaseCargado) aplicarTraducciones();
+            init();
         }
     }
     
@@ -690,9 +784,65 @@
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tab).classList.add('active');
-        if(event && event.target) event.target.classList.add('active');
+        document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
         
-        // Cerrar cámaras al cambiar de pestaña
+        // Detener cámaras al cambiar de pestaña
+        if(typeof cameraInventarioActive !== 'undefined' && cameraInventarioActive) toggleCameraInventario();
+        if(typeof cameraVentasActive !== 'undefined' && cameraVentasActive) toggleCameraVentas();
+        if(typeof cameraProveedoresActive !== 'undefined' && cameraProveedoresActive) toggleCameraProveedores();
+        
+        render();
+    }
+
+    function toggleCollapse(header) {
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('.collapse-icon');
+        content.classList.toggle('active');
+        icon.classList.toggle('rotate-icon');
+    }
+
+    function filtrarProveedores(val) {
+        const dropdown = document.getElementById('proveedorDropdown');
+        const searchInput = document.getElementById('proveedorSearch');
+        const hiddenInput = document.getElementById('proveedorFactura');
+        
+        if (!val) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        const filtered = proveedores.filter(p => 
+            p.nombre.toLowerCase().includes(val.toLowerCase()) || 
+            (p.rif && p.rif.toLowerCase().includes(val.toLowerCase()))
+        );
+
+        if (filtered.length > 0) {
+            dropdown.innerHTML = filtered.map(p => `
+                <div onclick="seleccionarProveedor('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')">
+                    <strong>${p.nombre}</strong><br>
+                    <small>${p.rif || 'Sin RIF'}</small>
+                </div>
+            `).join('');
+            dropdown.style.display = 'block';
+        } else {
+            dropdown.style.display = 'none';
+        }
+    }
+
+    function seleccionarProveedor(id, nombre) {
+        document.getElementById('proveedorFactura').value = id;
+        document.getElementById('proveedorSearch').value = nombre;
+        document.getElementById('proveedorDropdown').style.display = 'none';
+        cargarProveedorFactura();
+    }
+
+    // Cerrar dropdown al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-container')) {
+            const dropdown = document.getElementById('proveedorDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+        }
+    });s al cambiar de pestaña
         if(cameraInventarioActive) toggleCameraInventario();
         if(cameraVentasActive) toggleCameraVentas();
         
@@ -1550,6 +1700,8 @@
         const moneda = document.getElementById('monedaCostoFactura').value;
         const cantidad = parseFloat(document.getElementById('cantidadFactura').value);
         const aplicarIva = document.getElementById('ivaFactura').checked;
+        const beneficio = parseFloat(document.getElementById('beneficioFactura').value) || 30;
+        const stockMin = parseFloat(document.getElementById('stockMinFactura').value) || stockMinimoGlobal;
         
         if(!proveedorId || !nroFactura || !producto || isNaN(costoUnitario) || isNaN(cantidad)) {
             return alert('Datos incompletos');
@@ -1578,13 +1730,17 @@
             subtotal: subtotal,
             iva: ivaAmount,
             total: total,
-            aplicaIva: aplicarIva
+            aplicaIva: aplicarIva,
+            beneficio: beneficio,
+            stockMin: stockMin
         });
         
         document.getElementById('skuFactura').value = '';
         document.getElementById('productoFactura').value = '';
         document.getElementById('costoUnitarioFactura').value = '';
         document.getElementById('cantidadFactura').value = '1';
+        document.getElementById('beneficioFactura').value = '30';
+        document.getElementById('stockMinFactura').value = '';
         document.getElementById('ivaFactura').checked = true;
         document.getElementById('totalFacturaPreview').textContent = 'Bs. 0,00';
         document.getElementById('skuFactura').focus();
@@ -1649,23 +1805,25 @@
         carritoFacturaTemp.forEach(p => {
             const idx = items.findIndex(i => (p.sku && i.codigoBarras === p.sku) || i.nombre.toLowerCase() === p.producto.toLowerCase());
             if(idx !== -1) {
-                // Producto existe: actualizar stock y costo (en USD)
+                // Producto existe: actualizar stock, costo, beneficio y stockMin
                 items[idx].cantidad += p.cantidad;
                 items[idx].costo = p.costoUSD;
-                // Recalcular precio de venta basado en el nuevo costo y el beneficio previo
-                items[idx].precioVenta = items[idx].costo * (1 + (items[idx].beneficio || 30)/100);
+                items[idx].beneficio = p.beneficio;
+                items[idx].stockMin = p.stockMin;
+                // Recalcular precio de venta basado en el nuevo costo y el nuevo beneficio
+                items[idx].precioVenta = items[idx].costo * (1 + p.beneficio/100);
             } else {
                 // Producto nuevo: añadir al inventario
                 items.push({
                     id: Date.now() + Math.random(),
                     nombre: p.producto,
                     costo: p.costoUSD,
-                    beneficio: 30,
-                    precioVenta: p.costoUSD * 1.30,
+                    beneficio: p.beneficio,
+                    precioVenta: p.costoUSD * (1 + p.beneficio/100),
                     cantidad: p.cantidad,
                     unidad: p.unidad || 'UND',
                     exento: !p.aplicaIva,
-                    stockMin: stockMinimoGlobal,
+                    stockMin: p.stockMin,
                     codigoBarras: p.sku
                 });
             }
@@ -1813,22 +1971,6 @@
                     </div>
                 `).join('');
             }
-        }
-
-        // Actualizar selector de proveedores
-        const select = document.getElementById('proveedorFactura');
-        if(!select) {
-            console.error('ERROR: No se encontro el elemento #proveedorFactura en el DOM');
-            return;
-        }
-        select.innerHTML = '<option value="">-- Seleccionar --</option>';
-        if(proveedores && proveedores.length > 0) {
-            proveedores.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.nombre;
-                select.appendChild(opt);
-            });
         }
         
         // Alertas de vencimiento
