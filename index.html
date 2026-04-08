@@ -359,6 +359,11 @@
         <button class="btn-add" onclick="guardarProveedor()" style="width:100%; margin-bottom:10px;">+ GUARDAR PROVEEDOR</button>
         <button class="btn-danger" onclick="limpiarFormProveedor()" style="width:100%; margin-bottom:20px;">LIMPIAR</button>
 
+        <datalist id="productosInventario"></datalist>
+
+        <h2>📋 Proveedores Registrados</h2>
+        <div id="listaProveedoresRegistrados" class="list-container" style="max-height: 300px; overflow-y: auto; margin-bottom:20px;"></div>
+
         <h2>📋 Registrar Factura de Compra</h2>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
             <div style="flex:1;">
@@ -372,6 +377,7 @@
                 <input type="text" id="nroFactura" placeholder="F-001">
             </div>
         </div>
+        <div id="infoProveedorSeleccionado" style="display:none; margin-bottom:10px;"></div>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
             <div style="flex:1;">
                 <label>Fecha Factura</label>
@@ -1495,6 +1501,7 @@
 
     function actualizarSugerenciasProductos() {
         const datalist = document.getElementById('productosInventario');
+        if(!datalist) return; // Protección: si el elemento no existe, salir sin error
         datalist.innerHTML = '';
         
         items.forEach(item => {
@@ -1697,14 +1704,34 @@
         document.getElementById('totalFacturaPreview').textContent = 'Bs. 0,00';
         document.getElementById('searchResultsFactura').innerHTML = '';
         document.getElementById('productoSugerencia').style.display = 'none';
+        const infoDiv = document.getElementById('infoProveedorSeleccionado');
+        if(infoDiv) { infoDiv.innerHTML = ''; infoDiv.style.display = 'none'; }
     }
 
     function cargarProveedorFactura() {
         const proveedorId = document.getElementById('proveedorFactura').value;
-        if(!proveedorId) return;
+        const infoDiv = document.getElementById('infoProveedorSeleccionado');
+        
+        if(!proveedorId) {
+            if(infoDiv) infoDiv.style.display = 'none';
+            return;
+        }
+        
         const proveedor = proveedores.find(p => p.id == proveedorId);
         if(proveedor) {
-            document.getElementById('productoFactura').focus();
+            if(infoDiv) {
+                infoDiv.innerHTML = `
+                    <div style="background:#e8f8f0; border:2px solid #27ae60; border-radius:8px; padding:12px; margin-top:8px; font-size:0.85rem;">
+                        <strong style="color:#27ae60; font-size:0.95rem;">✓ Proveedor seleccionado:</strong><br>
+                        <span style="font-size:0.9rem; font-weight:bold;">${proveedor.nombre}</span>
+                        ${proveedor.rif ? `<br><span style="color:#555;">RIF: ${proveedor.rif}</span>` : ''}
+                        ${proveedor.vendedor ? `<br><span style="color:#555;">Vendedor: ${proveedor.vendedor}</span>` : ''}
+                        ${proveedor.telefono ? `<br><span style="color:#555;">Tel: ${proveedor.telefono}</span>` : ''}
+                    </div>
+                `;
+                infoDiv.style.display = 'block';
+            }
+            document.getElementById('skuFactura').focus();
         }
     }
 
@@ -1740,17 +1767,69 @@
         }
     }
 
+    function editarProveedor(id) {
+        const p = proveedores.find(x => x.id == id);
+        if(!p) return;
+        document.getElementById('editProveedorId').value = p.id;
+        document.getElementById('nombreProveedor').value = p.nombre || '';
+        document.getElementById('rifProveedor').value = p.rif || '';
+        document.getElementById('telefonoProveedor').value = p.telefono || '';
+        document.getElementById('correoProveedor').value = p.correo || '';
+        document.getElementById('vendedorProveedor').value = p.vendedor || '';
+        document.getElementById('direccionProveedor').value = p.direccion || '';
+        document.getElementById('nombreProveedor').focus();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function eliminarProveedor(id) {
+        if(!confirm('¿Eliminar este proveedor?')) return;
+        proveedores = proveedores.filter(p => p.id != id);
+        sync();
+        render();
+    }
+
     function renderProveedores() {
         actualizarSugerenciasProductos();
+
+        // Render lista visual de proveedores registrados
+        const listaDiv = document.getElementById('listaProveedoresRegistrados');
+        if(listaDiv) {
+            if(!proveedores || proveedores.length === 0) {
+                listaDiv.innerHTML = '<p style="text-align:center; color:#999; padding:15px;">No hay proveedores registrados</p>';
+            } else {
+                listaDiv.innerHTML = proveedores.map(p => `
+                    <div class="item">
+                        <div class="item-header">
+                            <span class="item-name">${p.nombre}</span>
+                            <span class="item-quantity" style="background: var(--info);">${p.rif || 'Sin RIF'}</span>
+                        </div>
+                        ${p.telefono ? `<div class="detail-row"><strong>Tel:</strong> ${p.telefono}</div>` : ''}
+                        ${p.vendedor ? `<div class="detail-row"><strong>Vendedor:</strong> ${p.vendedor}</div>` : ''}
+                        ${p.correo ? `<div class="detail-row"><strong>Correo:</strong> ${p.correo}</div>` : ''}
+                        <div class="item-actions">
+                            <button class="btn-edit" onclick="editarProveedor(${p.id})">✏️ Editar</button>
+                            <button class="btn-delete" onclick="eliminarProveedor(${p.id})">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
         // Actualizar selector de proveedores
         const select = document.getElementById('proveedorFactura');
+        if(!select) {
+            console.error('ERROR: No se encontro el elemento #proveedorFactura en el DOM');
+            return;
+        }
         select.innerHTML = '<option value="">-- Seleccionar --</option>';
-        proveedores.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.nombre;
-            select.appendChild(opt);
-        });
+        if(proveedores && proveedores.length > 0) {
+            proveedores.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.nombre;
+                select.appendChild(opt);
+            });
+        }
         
         // Alertas de vencimiento
         const hoy = new Date();
@@ -1836,11 +1915,8 @@
         document.getElementById('cantidadFactura')?.addEventListener('input', calcularTotalFactura);
         document.getElementById('ivaFactura')?.addEventListener('change', calcularTotalFactura);
         document.getElementById('monedaCostoFactura')?.addEventListener('change', calcularTotalFactura);
-
-
     });
-
-    init();
+    // init() es llamado por verificarLibrerias() una vez que Firebase y html5-qrcode están cargados
 </script>
 </body>
 </html>
