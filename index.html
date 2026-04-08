@@ -1489,38 +1489,8 @@
     }
 
     function validarProductoDuplicado() {
-        const nombreProducto = document.getElementById('productoFactura').value.trim().toLowerCase();
-        const skuProducto = document.getElementById('skuFactura').value.trim();
-        let alertaDiv = document.getElementById('alertaDuplicado');
-        
-        if(!alertaDiv) {
-            alertaDiv = document.createElement('div');
-            alertaDiv.id = 'alertaDuplicado';
-            document.getElementById('productoFactura').parentElement.appendChild(alertaDiv);
-        }
-        
-        if(!nombreProducto && !skuProducto) {
-            alertaDiv.innerHTML = '';
-            return;
-        }
-        
-        // Búsqueda flexible por nombre o SKU
-        const productoDuplicado = items.find(i => {
-            const nombreInventario = (i.nombre || '').toLowerCase();
-            const skuInventario = (i.codigoBarras || '').replace(/\s/g, '');
-            const skuLimpio = skuProducto.replace(/\s/g, '');
-            
-            return (nombreProducto && nombreInventario.includes(nombreProducto)) ||
-                   (skuLimpio && skuInventario.includes(skuLimpio));
-        });
-        
-        if(productoDuplicado) {
-            alertaDiv.innerHTML = `<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 8px; margin-top: 8px; color: #856404; font-size: 0.9rem;">
-                ⚠️ <strong>Producto existente:</strong> ${productoDuplicado.nombre} (Stock: ${productoDuplicado.stock})
-            </div>`;
-        } else {
-            alertaDiv.innerHTML = '';
-        }
+        // Función desactivada: la advertencia visual se ha eliminado para no interferir con la nueva ventana de búsqueda
+        return;
     }
 
     function actualizarSugerenciasProductos() {
@@ -1582,6 +1552,10 @@
         const costoUSD = moneda === 'BS' ? costoUnitario / tasaDolar : costoUnitario;
         const costoBS = moneda === 'BS' ? costoUnitario : costoUnitario * tasaDolar;
         
+        // Obtener unidad del producto si existe en inventario
+        const productoExistente = items.find(i => (sku && i.codigoBarras === sku) || i.nombre.toLowerCase() === producto.toLowerCase());
+        const unidad = productoExistente ? (productoExistente.unidad || 'UND') : 'UND';
+
         const subtotal = costoBS * cantidad;
         const ivaAmount = aplicarIva ? subtotal * (ivaPorcentaje / 100) : 0;
         const total = subtotal + ivaAmount;
@@ -1593,6 +1567,7 @@
             costoUnitario: costoBS,
             costoUSD: costoUSD,
             cantidad: cantidad,
+            unidad: unidad,
             subtotal: subtotal,
             iva: ivaAmount,
             total: total,
@@ -1619,7 +1594,7 @@
             return `<div class="item" style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="flex: 1;">
                     <b>${p.producto}</b> ${p.sku ? '<small style="color: #666;">[SKU: ' + p.sku + ']</small>' : ''}<br>
-                    <small>Costo: Bs. ${fM(p.costoUnitario)} x ${p.cantidad} = Bs. ${fM(p.subtotal)}</small>
+                    <small>Costo: Bs. ${fM(p.costoUnitario)} x ${p.cantidad} ${p.unidad || 'UND'} = Bs. ${fM(p.subtotal)}</small>
                     ${p.aplicaIva ? '<br><small style="color: var(--warning);">IVA: Bs. ' + fM(p.iva) + '</small>' : ''}
                 </div>
                 <div style="text-align: right; margin-left: 10px;">
@@ -1681,7 +1656,7 @@
                     beneficio: 30,
                     precioVenta: p.costoUSD * 1.30,
                     cantidad: p.cantidad,
-                    unidad: 'UND',
+                    unidad: p.unidad || 'UND',
                     exento: !p.aplicaIva,
                     stockMin: stockMinimoGlobal,
                     codigoBarras: p.sku
@@ -1861,8 +1836,7 @@
         document.getElementById('cantidadFactura')?.addEventListener('input', calcularTotalFactura);
         document.getElementById('ivaFactura')?.addEventListener('change', calcularTotalFactura);
         document.getElementById('monedaCostoFactura')?.addEventListener('change', calcularTotalFactura);
-        document.getElementById('productoFactura')?.addEventListener('input', validarProductoDuplicado);
-        document.getElementById('skuFactura')?.addEventListener('input', validarProductoDuplicado);
+
 
     });
 
