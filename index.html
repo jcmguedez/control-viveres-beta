@@ -393,9 +393,9 @@
         </div>
         <div class="input-group">
             <label>Nombre del Producto</label>
-            <input type="text" id="productoFactura" placeholder="Empieza a escribir para ver sugerencias..." list="productosInventario" autocomplete="off">
-            <datalist id="productosInventario"></datalist>
-            <small id="productoSugerencia" style="color: #27ae60; display: none; margin-top: 5px;">✓ Producto encontrado en inventario</small>
+            <input type="text" id="productoFactura" placeholder="Nombre del producto o escáner" autocomplete="off" onkeyup="filtrarProductosProveedores()">
+            <div id="listaSugerenciasProveedores" class="list-container" style="display:none; max-height: 150px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; margin-top: 5px; background: white; z-index: 100;"></div>
+            
         </div>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
             <div style="flex:1;">
@@ -1079,14 +1079,28 @@
 
     function onScanSuccessProveedores(decodedText) {
         document.getElementById('skuFactura').value = decodedText;
-        // Búsqueda EXACTA primero, luego flexible
         const codigoLimpio = decodedText.replace(/\s/g, '');
         
-        // Intenta búsqueda exacta primero
+        // Búsqueda exacta
         let producto = items.find(i => {
             const codigoInventario = (i.codigoBarras || '').replace(/\s/g, '');
             return codigoInventario === codigoLimpio;
         });
+        
+        if(producto) {
+            document.getElementById('productoFactura').value = producto.nombre;
+            document.getElementById('costoUnitarioFactura').value = (producto.costo * tasaDolar).toFixed(2);
+            document.getElementById('qr-status-proveedores').textContent = '✓ ' + producto.nombre;
+            document.getElementById('qr-status-proveedores').style.color = '#27ae60';
+        } else {
+            document.getElementById('productoFactura').value = '';
+            document.getElementById('costoUnitarioFactura').value = '';
+            document.getElementById('qr-status-proveedores').textContent = '⚠️ Código: ' + decodedText;
+            document.getElementById('qr-status-proveedores').style.color = '#f39c12';
+        }
+        
+        setTimeout(() => closeCameraProveedores(), 500);
+    });
         
         // Si no encuentra exacto, busca parcial (pero solo si tiene código)
         if(!producto && codigoLimpio.length >= 5) {
@@ -1513,47 +1527,46 @@
         }
     }
 
-    function actualizarSugerenciasProductos() {
-        const datalist = document.getElementById('productosInventario');
-        datalist.innerHTML = '';
+        function filtrarProductosProveedores() {
+        const input = document.getElementById('productoFactura').value.toLowerCase().trim();
+        const listaSugerencias = document.getElementById('listaSugerenciasProveedores');
         
-        items.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.nombre;
-            option.dataset.id = item.id;
-            option.dataset.sku = item.codigoBarras || '';
-            option.dataset.costo = item.costo || 0;
-            datalist.appendChild(option);
+        if(input.length === 0) {
+            listaSugerencias.style.display = 'none';
+            return;
+        }
+        
+        const productosFiltered = items.filter(item => 
+            item.nombre.toLowerCase().includes(input)
+        );
+        
+        if(productosFiltered.length === 0) {
+            listaSugerencias.style.display = 'none';
+            return;
+        }
+        
+        listaSugerencias.innerHTML = '';
+        productosFiltered.forEach(producto => {
+            const div = document.createElement('div');
+            div.style.cssText = 'padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: white;';
+            div.innerHTML = `<strong>${producto.nombre}</strong><br><small style="color: #666;">SKU: ${producto.codigoBarras || 'N/A'} | Costo: Bs. ${(producto.costo * tasaDolar).toFixed(2)}</small>`;
+            div.onmouseover = () => div.style.background = '#f5f5f5';
+            div.onmouseout = () => div.style.background = 'white';
+            div.onclick = () => seleccionarProductoProveedores(producto);
+            listaSugerencias.appendChild(div);
         });
+        
+        listaSugerencias.style.display = 'block';
     }
     
-    function onProductoFacturaChange() {
-        const nombreProducto = document.getElementById('productoFactura').value.trim();
-        const datalist = document.getElementById('productosInventario');
-        const options = datalist.querySelectorAll('option');
-        
-        let productoEncontrado = null;
-        for(let opt of options) {
-            if(opt.value.toLowerCase() === nombreProducto.toLowerCase()) {
-                productoEncontrado = {
-                    nombre: opt.value,
-                    costo: parseFloat(opt.dataset.costo),
-                    sku: opt.dataset.sku
-                };
-                break;
-            }
-        }
-        
-        if(productoEncontrado) {
-            document.getElementById('costoUnitarioFactura').value = productoEncontrado.costo.toFixed(2);
-            document.getElementById('skuFactura').value = productoEncontrado.sku || '';
-            document.getElementById('productoSugerencia').style.display = 'block';
-        } else {
-            document.getElementById('productoSugerencia').style.display = 'none';
-        }
+    function seleccionarProductoProveedores(producto) {
+        document.getElementById('productoFactura').value = producto.nombre;
+        document.getElementById('skuFactura').value = producto.codigoBarras || '';
+        document.getElementById('costoUnitarioFactura').value = (producto.costo * tasaDolar).toFixed(2);
+        document.getElementById('listaSugerenciasProveedores').style.display = 'none';
     }
-
-    function anadirProductoFactura() {
+    
+        function anadirProductoFactura() {
         const proveedorId = document.getElementById('proveedorFactura').value;
         const nroFactura = document.getElementById('nroFactura').value;
         const sku = document.getElementById('skuFactura').value;
