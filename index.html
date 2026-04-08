@@ -690,30 +690,11 @@
                 });
             });
             
-            // Eliminar fondos grises
-            const todosElementos = container.querySelectorAll('*');
-            todosElementos.forEach(el => {
-                const bg = window.getComputedStyle(el).backgroundColor;
-                if(bg === 'rgb(240, 240, 240)' || bg === 'rgb(245, 245, 245)' || bg === 'rgb(200, 200, 200)') {
-                    el.style.background = 'transparent !important';
-                }
-            });
+            // Nota: Eliminamos la búsqueda de fondos grises para optimizar rendimiento
         };
         
-        // Aplicar estilos inmediatamente
+        // Aplicar estilos UNA SOLA VEZ - SIN OBSERVADOR PARA EVITAR CONGELAMIENTO
         aplicarEstilos();
-        
-        // Observador para cambios en tiempo real (MutationObserver)
-        const observer = new MutationObserver(() => {
-            aplicarEstilos();
-        });
-        
-        observer.observe(container, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['style', 'class']
-        });
     }
 
     function closeCameraInventario() {
