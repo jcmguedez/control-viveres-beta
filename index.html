@@ -131,6 +131,20 @@
         .html5-qrcode-button:active, button[id*="html5-qrcode"]:active, div[id*="html5-qrcode"] button:active { 
             transform: scale(0.95) !important; 
         }
+        /* Forzar estilos en TODOS los botones del scanner */
+        #qr-reader-inventario button, #qr-reader-ventas button {
+            background: var(--primary) !important;
+            color: white !important;
+            padding: 10px 15px !important;
+            border-radius: 8px !important;
+            font-weight: bold !important;
+            border: none !important;
+            cursor: pointer !important;
+            font-size: 0.9rem !important;
+        }
+        #qr-reader-inventario button:hover, #qr-reader-ventas button:hover {
+            background: #1e8449 !important;
+        }
         /* Eliminar fondos grises */
         #qr-reader-inventario, #qr-reader-ventas { background: transparent !important; }
         #qr-reader-inventario > *, #qr-reader-ventas > * { background: transparent !important; }
@@ -657,9 +671,15 @@
                 
                 // Si no se tradujo, intentar con palabras clave
                 if(!traducido) {
-                    if(textoOriginal.includes('scan')) btn.textContent = 'Iniciar Escaneo';
-                    else if(textoOriginal.includes('torch')) btn.textContent = '💡 Linterna';
-                    else if(textoOriginal.includes('camera')) btn.textContent = 'Elegir Cámara';
+                    if(textoOriginal.includes('scan') || textoOriginal.includes('start')) {
+                        btn.textContent = 'Iniciar Escaneo';
+                    } else if(textoOriginal.includes('stop')) {
+                        btn.textContent = 'Detener Escaneo';
+                    } else if(textoOriginal.includes('torch')) {
+                        btn.textContent = '💡 Linterna';
+                    } else if(textoOriginal.includes('camera') || textoOriginal.includes('select')) {
+                        btn.textContent = 'Elegir Cámara';
+                    }
                 }
                 
                 // Aplicar estilos
@@ -707,8 +727,16 @@
             // Nota: Eliminamos la búsqueda de fondos grises para optimizar rendimiento
         };
         
-        // Aplicar estilos UNA SOLA VEZ - SIN OBSERVADOR PARA EVITAR CONGELAMIENTO
+        // Aplicar estilos UNA SOLA VEZ
         aplicarEstilos();
+        
+        // Reintentar cada 200ms durante 2 segundos (para botones que aparecen tarde)
+        let intentos = 0;
+        const intervalo = setInterval(() => {
+            aplicarEstilos();
+            intentos++;
+            if(intentos > 10) clearInterval(intervalo);
+        }, 200);
     }
 
     function closeCameraInventario() {
