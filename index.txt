@@ -1,0 +1,85 @@
+RESUMEN TÉCNICO DEL SISTEMA "VÍVERES LOS ÁNGELES"
+
+================================================================================
+
+**1. NOMBRE DEL PROYECTO:**
+   - Principal: Víveres Los Ángeles
+   - Entorno de Pruebas: Viveres-Pruebas
+
+**2. OBJETIVO PRINCIPAL:**
+   Aplicación web para control de inventario, punto de venta y gestión de proveedores, diseñada para pequeñas bodegas.
+
+**3. TECNOLOGÍAS UTILIZADAS:**
+   - Frontend: HTML, CSS, JavaScript (Vanilla JS)
+   - Base de Datos: Firebase Realtime Database
+   - Librería de Escaneo: html5-qrcode (v2.3.4)
+   - Hosting: GitHub Pages (soporte HTTPS)
+   - Almacenamiento Local: LocalStorage del navegador
+
+**4. ESTRUCTURA DE DATOS (Firebase & LocalStorage):**
+   - **Versión Real (v1/v2/Premium):**
+     - Firebase: `viveres_pro/data`
+     - LocalStorage: `v_items`, `v_ventas`, `v_creditos`, etc.
+   - **Versión de Pruebas (Beta/Premium):**
+     - Firebase: `viveres_beta/data`
+     - LocalStorage: `beta_items`, `beta_ventas`, `beta_creditos`, `beta_proveedores`, etc.
+
+**5. MÓDULOS Y FUNCIONALIDADES CLAVE:**
+
+   **5.1. Módulo Base (v1):**
+     - Control de Inventario (ID, Nombre, Stock, Precio, Costo)
+     - Punto de Venta (Carrito, Finalizar Venta, Créditos)
+     - Gestión de IVA (configuración de porcentaje)
+     - Control de Fallas
+     - Cierre de Caja
+     - Formato de moneda (Bs. y $)
+     - Escaneo de productos mediante cámara (requiere HTTPS)
+
+   **5.2. Módulo Pro (v2 - Mejoras de Escaneo):**
+     - **Campo 'codigoBarras' (SKU):** Añadido a la estructura del objeto 'item' en LocalStorage y Firebase.
+     - **Escaneo por Cámara (html5-qrcode):**
+       - Integrado en el formulario de 
+inventario para carga y autocompletado.
+       - Integrado en la pestaña de Ventas para búsqueda rápida y adición al carrito.
+       - **Búsqueda Prioritaria:** Si el input recibe una cadena numérica de 7 a 13 dígitos, busca por 'codigoBarras' antes que por nombre.
+       - **Autocompletado:** Al detectar un código, busca coincidencias en 'items' y carga datos automáticamente.
+     - **Persistencia:** Actualización de la función 'sync()' para reflejar 'codigoBarras' en Firebase.
+     - **Aislamiento de Entorno (Versión Beta):**
+       - Rutas de Firebase: `viveres_beta/data`.
+       - LocalStorage: `beta_items`, `beta_ventas`, `beta_creditos`.
+       - Configuración de Firebase (apiKey, projectId, etc.) embebida en el código.
+     - **Optimización de Cámara:**
+       - Uso de `Html5QrcodeScanner` para mayor compatibilidad (especialmente Android/POCO).
+       - Botones de control de cámara (Iniciar, Detener, Elegir Cámara) estilizados en verde y traducidos al español.
+       - Manejo de errores y reintentos para acceso a cámara.
+       - Solución de "Html5QrcodeScanner is not defined" mediante cambio de CDN (cdnjs.com) y carga segura.
+       - Traducción de botones mediante "Traducción Forzada por Intervalos" (CSS y JS ligero).
+
+   **5.3. Módulo Premium (Proveedores):**
+     - **Pestaña "Proveedores":** Nueva sección dedicada en la interfaz.
+     - **Registro de Proveedores:**
+       - Campos: Nombre de la Empresa, RIF, Teléfono, Correo, Vendedor, Dirección.
+       - Guardado en LocalStorage (`beta_proveedores`) y Firebase (`viveres_beta/proveedores`).
+     - **Gestión de Facturas de Compra (Carga por Lotes):**
+       - **Cabecera Fija:** Datos de Proveedor, Nro. Factura, Fechas (Emisión/Vencimiento) se mantienen fijos durante la carga.
+       - **Carrito de Factura:** Lista temporal para añadir múltiples productos a una misma factura.
+       - **Campo SKU Dedicado:** Input para Código de Barras (SKU) en el formulario de productos de factura.
+       - **Escáner Integrado:** Botón "📷 ESCANEAR" para cargar SKU directamente.
+       - **Autocompletado Inteligente en Factura:** Al escanear/escribir SKU:
+         - Si existe en inventario: Rellena Nombre y Costo Unitario.
+         - Si no existe: Deja Nombre vacío para entrada manual.
+       - **Validación de Duplicados:** Alerta visual "⚠️ Producto existente" si el SKU o Nombre ya está en el inventario.
+       - **Búsqueda Flexible de SKU:** Encuentra productos por coincidencias parciales o con espacios en el código.
+       - **Cálculo de IVA por Producto:** Opción de aplicar IVA (16%) individualmente a cada producto de la factura.
+       - **Total Acumulado:** Muestra el total de la factura en tiempo real.
+       - **Botón "✓ FINALIZAR Y REGISTRAR FACTURA":** Guarda la factura completa con todos sus productos y limpia el formulario.
+       - **Botón "✕ CANCELAR FACTURA":** Limpia el formulario sin guardar.
+     - **Alertas de Vencimiento:** Panel visual para facturas próximas a vencer o vencidas.
+     - **Cuentas por Pagar:** Resumen de deudas por proveedor.
+     - **Historial de Facturas:** Registro detallado de todas las compras.
+
+**6. CONSIDERACIONES DE MIGRACIÓN:**
+   - Para migrar de la versión real (v1) a la Premium, se debe cambiar la ruta de Firebase a `viveres_pro/data` y las claves de LocalStorage a `v_items`, `v_ventas`, etc. (unificar a la estructura de producción).
+   - El módulo de Proveedores comenzará vacío en la migración, pero el inventario, ventas y créditos existentes se cargarán automáticamente.
+
+================================================================================
