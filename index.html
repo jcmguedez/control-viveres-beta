@@ -1075,14 +1075,24 @@
 
     function onScanSuccessProveedores(decodedText) {
         document.getElementById('skuFactura').value = decodedText;
-        const producto = items.find(i => i.codigoBarras === decodedText);
+        // Búsqueda flexible: busca coincidencias parciales
+        const codigoLimpio = decodedText.replace(/\s/g, '');
+        const producto = items.find(i => {
+            const codigoInventario = (i.codigoBarras || '').replace(/\s/g, '');
+            return codigoInventario === codigoLimpio || 
+                   codigoInventario.includes(codigoLimpio) || 
+                   codigoLimpio.includes(codigoInventario);
+        });
+        
         if(producto) {
             document.getElementById('productoFactura').value = producto.nombre;
             document.getElementById('costoUnitarioFactura').value = (producto.costo * tasaDolar).toFixed(2);
-            document.getElementById('qr-status-proveedores').textContent = 'Producto encontrado: ' + producto.nombre;
+            document.getElementById('qr-status-proveedores').textContent = '✓ Producto encontrado: ' + producto.nombre;
+            document.getElementById('qr-status-proveedores').style.color = '#27ae60';
         } else {
             document.getElementById('productoFactura').value = '';
-            document.getElementById('qr-status-proveedores').textContent = 'Codigo: ' + decodedText + ' (nuevo producto)';
+            document.getElementById('qr-status-proveedores').textContent = '⚠️ Codigo: ' + decodedText + ' (nuevo producto)';
+            document.getElementById('qr-status-proveedores').style.color = '#f39c12';
         }
         
         setTimeout(() => closeCameraProveedores(), 500);
@@ -1453,6 +1463,41 @@
         document.getElementById('editProveedorId').value = '';
     }
 
+    function validarProductoDuplicado() {
+        const nombreProducto = document.getElementById('productoFactura').value.trim().toLowerCase();
+        const skuProducto = document.getElementById('skuFactura').value.trim();
+        let alertaDiv = document.getElementById('alertaDuplicado');
+        
+        if(!alertaDiv) {
+            alertaDiv = document.createElement('div');
+            alertaDiv.id = 'alertaDuplicado';
+            document.getElementById('productoFactura').parentElement.appendChild(alertaDiv);
+        }
+        
+        if(!nombreProducto && !skuProducto) {
+            alertaDiv.innerHTML = '';
+            return;
+        }
+        
+        // Búsqueda flexible por nombre o SKU
+        const productoDuplicado = items.find(i => {
+            const nombreInventario = (i.nombre || '').toLowerCase();
+            const skuInventario = (i.codigoBarras || '').replace(/\s/g, '');
+            const skuLimpio = skuProducto.replace(/\s/g, '');
+            
+            return (nombreProducto && nombreInventario.includes(nombreProducto)) ||
+                   (skuLimpio && skuInventario.includes(skuLimpio));
+        });
+        
+        if(productoDuplicado) {
+            alertaDiv.innerHTML = `<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 8px; margin-top: 8px; color: #856404; font-size: 0.9rem;">
+                ⚠️ <strong>Producto existente:</strong> ${productoDuplicado.nombre} (Stock: ${productoDuplicado.stock})
+            </div>`;
+        } else {
+            alertaDiv.innerHTML = '';
+        }
+    }
+
     function anadirProductoFactura() {
         const proveedorId = document.getElementById('proveedorFactura').value;
         const nroFactura = document.getElementById('nroFactura').value;
@@ -1708,6 +1753,8 @@
         document.getElementById('costoUnitarioFactura')?.addEventListener('input', calcularTotalFactura);
         document.getElementById('cantidadFactura')?.addEventListener('input', calcularTotalFactura);
         document.getElementById('ivaFactura')?.addEventListener('change', calcularTotalFactura);
+        document.getElementById('productoFactura')?.addEventListener('input', validarProductoDuplicado);
+        document.getElementById('skuFactura')?.addEventListener('input', validarProductoDuplicado);
     });
 
     init();
