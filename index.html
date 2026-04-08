@@ -100,6 +100,21 @@
         .camera-container { display: flex; gap: 5px; align-items: center; margin-bottom: 10px; }
         #qr-reader { width: 100%; max-width: 400px; margin: 10px auto; }
         .qr-reader-status { text-align: center; font-size: 0.85rem; color: #666; margin: 10px 0; }
+        #qr-reader-inventario, #qr-reader-ventas { width: 100%; margin: 10px 0; }
+        #qr-status-inventario, #qr-status-ventas { text-align: center; font-size: 0.85rem; color: #666; margin: 10px 0; font-weight: bold; }
+        /* Estilos personalizados para html5-qrcode */
+        .html5-qrcode-element { width: 100% !important; }
+        .html5-qrcode { width: 100% !important; }
+        .html5-qrcode video { width: 100% !important; height: auto !important; }
+        .html5-qrcode__scan-region { border: 3px solid var(--primary) !important; border-radius: 10px !important; }
+        .html5-qrcode__camera-selection { margin: 10px 0 !important; }
+        .html5-qrcode__camera-selection select { width: 100% !important; padding: 10px !important; border: 2px solid var(--primary) !important; border-radius: 8px !important; background: white !important; color: #333 !important; font-weight: bold !important; }
+        .html5-qrcode__camera-selection label { color: #333 !important; font-weight: bold !important; margin-bottom: 5px !important; display: block !important; }
+        .html5-qrcode__status { color: #333 !important; font-weight: bold !important; }
+        .html5-qrcode__bottom-section { margin-top: 10px !important; }
+        .html5-qrcode-button { background: var(--primary) !important; color: white !important; border: none !important; padding: 10px 15px !important; border-radius: 8px !important; font-weight: bold !important; cursor: pointer !important; margin: 5px !important; font-size: 0.9rem !important; }
+        .html5-qrcode-button:hover { background: #1e8449 !important; }
+        .html5-qrcode-button:active { transform: scale(0.95) !important; }
     </style>
 </head>
 <body>
@@ -350,6 +365,8 @@
         if(typeof Html5QrcodeScanner !== 'undefined' && typeof firebase !== 'undefined') {
             libreriasListas = true;
             console.log('✓ Librerías cargadas correctamente');
+            // Aplicar traducciones y estilos personalizados
+            aplicarTraducciones();
             init();
         } else if(intentosVerificacion < maxIntentos) {
             intentosVerificacion++;
@@ -358,6 +375,29 @@
             console.error('✗ Error: Las librerías no se cargaron después de 5 segundos');
             alert('Error: No se pudieron cargar las librerías necesarias. Por favor, recarga la página.');
         }
+    }
+    
+    function aplicarTraducciones() {
+        // Diccionario de traducciones para html5-qrcode
+        window.Html5QrcodeI18n = {
+            'scan_update': 'Escaneando...',
+            'permission_denied': 'Permiso denegado',
+            'camera_not_found': 'Cámara no encontrada',
+            'camera_permission_not_granted': 'Permiso de cámara no otorgado',
+            'to_scan_qr_code_properly_allow_camera': 'Para escanear códigos de barras, permite el acceso a la cámara',
+            'camera_bind_error': 'Error al acceder a la cámara',
+            'qr_code_unsupported': 'Código QR no soportado',
+            'camera_permission_request': 'Solicitar permiso de cámara',
+            'camera_permission_request_allow': 'Permitir',
+            'camera_permission_request_deny': 'Denegar',
+            'select_camera': 'Elegir cámara',
+            'camera_facing_back': 'Cámara trasera',
+            'camera_facing_front': 'Cámara frontal',
+            'stop_scanning': 'Detener escaneo',
+            'start_scanning': 'Iniciar escaneo',
+            'torch_on': 'Linterna ON',
+            'torch_off': 'Linterna OFF'
+        };
     }
     
     // Iniciar verificación cuando el DOM esté listo
@@ -527,11 +567,24 @@
         try {
             scannerInventario = new Html5QrcodeScanner(
                 "qr-reader-inventario",
-                { fps: 10, qrbox: 250, rememberLastUsedCamera: true, showTorchButtonIfSupported: true },
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 }, 
+                    rememberLastUsedCamera: true, 
+                    showTorchButtonIfSupported: true,
+                    aspectRatio: 1.0
+                },
                 false
             );
             
+            // Personalizar textos de botones después de renderizar
             scannerInventario.render(onScanSuccessInventario, onScanErrorInventario);
+            
+            // Esperar a que se renderice y luego cambiar textos
+            setTimeout(() => {
+                personalizarBotonesEscaner('qr-reader-inventario');
+            }, 500);
+            
             cameraInventarioActive = true;
             statusDiv.textContent = '✓ Cámara activa - Escanea un código';
         } catch(err) {
@@ -539,6 +592,72 @@
             statusDiv.innerHTML = '✗ Error: ' + err.message + '<br><button onclick="closeCameraInventario()" style="padding:5px; margin-top:5px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer;">Cerrar</button>';
             cameraInventarioActive = false;
         }
+    }
+    
+    function personalizarBotonesEscaner(containerId) {
+        const container = document.getElementById(containerId);
+        if(!container) return;
+        
+        // Cambiar textos de botones
+        const botones = container.querySelectorAll('button');
+        botones.forEach(btn => {
+            const texto = btn.textContent.toLowerCase();
+            if(texto.includes('start') || texto.includes('iniciar')) {
+                btn.textContent = 'Iniciar Escaneo';
+                btn.style.background = 'var(--primary)';
+                btn.style.color = 'white';
+                btn.style.padding = '10px 15px';
+                btn.style.borderRadius = '8px';
+                btn.style.fontWeight = 'bold';
+                btn.style.border = 'none';
+                btn.style.cursor = 'pointer';
+            } else if(texto.includes('stop') || texto.includes('detener')) {
+                btn.textContent = 'Detener Escaneo';
+                btn.style.background = '#e74c3c';
+                btn.style.color = 'white';
+                btn.style.padding = '10px 15px';
+                btn.style.borderRadius = '8px';
+                btn.style.fontWeight = 'bold';
+                btn.style.border = 'none';
+                btn.style.cursor = 'pointer';
+            } else if(texto.includes('torch') || texto.includes('linterna')) {
+                btn.textContent = '💡 Linterna';
+                btn.style.background = '#f39c12';
+                btn.style.color = 'white';
+                btn.style.padding = '10px 15px';
+                btn.style.borderRadius = '8px';
+                btn.style.fontWeight = 'bold';
+                btn.style.border = 'none';
+                btn.style.cursor = 'pointer';
+            }
+        });
+        
+        // Cambiar etiqueta de selección de cámara
+        const labels = container.querySelectorAll('label');
+        labels.forEach(label => {
+            if(label.textContent.toLowerCase().includes('camera')) {
+                label.textContent = 'Elegir Cámara:';
+                label.style.fontWeight = 'bold';
+                label.style.color = '#333';
+            }
+        });
+        
+        // Cambiar opciones de cámara
+        const selects = container.querySelectorAll('select');
+        selects.forEach(select => {
+            const options = select.querySelectorAll('option');
+            options.forEach(opt => {
+                if(opt.textContent.includes('back') || opt.textContent.includes('trasera')) {
+                    opt.textContent = 'Cámara Trasera';
+                } else if(opt.textContent.includes('front') || opt.textContent.includes('frontal')) {
+                    opt.textContent = 'Cámara Frontal';
+                } else if(opt.textContent.includes('user')) {
+                    opt.textContent = 'Cámara Frontal';
+                } else if(opt.textContent.includes('environment')) {
+                    opt.textContent = 'Cámara Trasera';
+                }
+            });
+        });
     }
 
     function closeCameraInventario() {
@@ -627,11 +746,24 @@
         try {
             scannerVentas = new Html5QrcodeScanner(
                 "qr-reader-ventas",
-                { fps: 10, qrbox: 250, rememberLastUsedCamera: true, showTorchButtonIfSupported: true },
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 }, 
+                    rememberLastUsedCamera: true, 
+                    showTorchButtonIfSupported: true,
+                    aspectRatio: 1.0
+                },
                 false
             );
             
+            // Personalizar textos de botones después de renderizar
             scannerVentas.render(onScanSuccessVentas, onScanErrorVentas);
+            
+            // Esperar a que se renderice y luego cambiar textos
+            setTimeout(() => {
+                personalizarBotonesEscaner('qr-reader-ventas');
+            }, 500);
+            
             cameraVentasActive = true;
             statusDiv.textContent = '✓ Cámara activa - Escanea un código de producto';
         } catch(err) {
