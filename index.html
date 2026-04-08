@@ -393,7 +393,9 @@
         </div>
         <div class="input-group">
             <label>Nombre del Producto</label>
-            <input type="text" id="productoFactura" placeholder="Nombre del producto">
+            <input type="text" id="productoFactura" placeholder="Empieza a escribir para ver sugerencias..." list="productosInventario" autocomplete="off">
+            <datalist id="productosInventario"></datalist>
+            <small id="productoSugerencia" style="color: #27ae60; display: none; margin-top: 5px;">✓ Producto encontrado en inventario</small>
         </div>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
             <div style="flex:1;">
@@ -430,8 +432,10 @@
             <div class="stats-value" id="totalFacturaCompleta" style="color: var(--success);">Bs. 0,00</div>
         </div>
         
-        <button class="btn-success" onclick="finalizarFactura()" style="width:100%; margin-bottom:10px; background: var(--success); padding: 12px; font-weight: bold; border-radius: 5px; border: none; color: white; cursor: pointer;">✓ FINALIZAR Y REGISTRAR FACTURA</button>
-        <button class="btn-secondary" onclick="cancelarFactura()" style="width:100%; margin-bottom:20px; background: #ccc; padding: 12px; font-weight: bold; border-radius: 5px; border: none; color: #333; cursor: pointer;">✕ CANCELAR FACTURA</button>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn-success" onclick="finalizarFactura()" style="flex: 1; background: #27ae60; padding: 15px; font-weight: bold; font-size: 1.1rem; border-radius: 8px; border: 2px solid #1e8449; color: white; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">✓ FINALIZAR FACTURA</button>
+            <button class="btn-secondary" onclick="cancelarFactura()" style="flex: 1; background: #e74c3c; padding: 15px; font-weight: bold; font-size: 1.1rem; border-radius: 8px; border: 2px solid #c0392b; color: white; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">✕ CANCELAR</button>
+        </div>
 
         <h2>🚨 Alertas de Vencimiento</h2>
         <div id="alertasVencimiento" class="list-container"></div>
@@ -1075,24 +1079,35 @@
 
     function onScanSuccessProveedores(decodedText) {
         document.getElementById('skuFactura').value = decodedText;
-        // Búsqueda flexible: busca coincidencias parciales
+        // Búsqueda EXACTA primero, luego flexible
         const codigoLimpio = decodedText.replace(/\s/g, '');
-        const producto = items.find(i => {
+        
+        // Intenta búsqueda exacta primero
+        let producto = items.find(i => {
             const codigoInventario = (i.codigoBarras || '').replace(/\s/g, '');
-            return codigoInventario === codigoLimpio || 
-                   codigoInventario.includes(codigoLimpio) || 
-                   codigoLimpio.includes(codigoInventario);
+            return codigoInventario === codigoLimpio;
         });
         
-        if(producto) {
+        // Si no encuentra exacto, busca parcial (pero solo si tiene código)
+        if(!producto && codigoLimpio.length >= 5) {
+            producto = items.find(i => {
+                const codigoInventario = (i.codigoBarras || '').replace(/\s/g, '');
+                return codigoInventario.includes(codigoLimpio) || codigoLimpio.includes(codigoInventario);
+            });
+        }
+        
+        if(producto && producto.codigoBarras) {
             document.getElementById('productoFactura').value = producto.nombre;
             document.getElementById('costoUnitarioFactura').value = (producto.costo * tasaDolar).toFixed(2);
             document.getElementById('qr-status-proveedores').textContent = '✓ Producto encontrado: ' + producto.nombre;
             document.getElementById('qr-status-proveedores').style.color = '#27ae60';
+            document.getElementById('productoSugerencia').style.display = 'block';
         } else {
             document.getElementById('productoFactura').value = '';
-            document.getElementById('qr-status-proveedores').textContent = '⚠️ Codigo: ' + decodedText + ' (nuevo producto)';
+            document.getElementById('costoUnitarioFactura').value = '';
+            document.getElementById('qr-status-proveedores').textContent = '⚠️ Codigo: ' + decodedText + ' (nuevo producto - ingresa nombre)';
             document.getElementById('qr-status-proveedores').style.color = '#f39c12';
+            document.getElementById('productoSugerencia').style.display = 'none';
         }
         
         setTimeout(() => closeCameraProveedores(), 500);
@@ -1498,6 +1513,46 @@
         }
     }
 
+    function actualizarSugerenciasProductos() {
+        const datalist = document.getElementById('productosInventario');
+        datalist.innerHTML = '';
+        
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.nombre;
+            option.dataset.id = item.id;
+            option.dataset.sku = item.codigoBarras || '';
+            option.dataset.costo = item.costo || 0;
+            datalist.appendChild(option);
+        });
+    }
+    
+    function onProductoFacturaChange() {
+        const nombreProducto = document.getElementById('productoFactura').value.trim();
+        const datalist = document.getElementById('productosInventario');
+        const options = datalist.querySelectorAll('option');
+        
+        let productoEncontrado = null;
+        for(let opt of options) {
+            if(opt.value.toLowerCase() === nombreProducto.toLowerCase()) {
+                productoEncontrado = {
+                    nombre: opt.value,
+                    costo: parseFloat(opt.dataset.costo),
+                    sku: opt.dataset.sku
+                };
+                break;
+            }
+        }
+        
+        if(productoEncontrado) {
+            document.getElementById('costoUnitarioFactura').value = productoEncontrado.costo.toFixed(2);
+            document.getElementById('skuFactura').value = productoEncontrado.sku || '';
+            document.getElementById('productoSugerencia').style.display = 'block';
+        } else {
+            document.getElementById('productoSugerencia').style.display = 'none';
+        }
+    }
+
     function anadirProductoFactura() {
         const proveedorId = document.getElementById('proveedorFactura').value;
         const nroFactura = document.getElementById('nroFactura').value;
@@ -1660,6 +1715,7 @@
     }
 
     function renderProveedores() {
+        actualizarSugerenciasProductos();
         // Actualizar selector de proveedores
         const select = document.getElementById('proveedorFactura');
         select.innerHTML = '<option value="">-- Seleccionar --</option>';
@@ -1755,6 +1811,7 @@
         document.getElementById('ivaFactura')?.addEventListener('change', calcularTotalFactura);
         document.getElementById('productoFactura')?.addEventListener('input', validarProductoDuplicado);
         document.getElementById('skuFactura')?.addEventListener('input', validarProductoDuplicado);
+        document.getElementById('productoFactura')?.addEventListener('change', onProductoFacturaChange);
     });
 
     init();
