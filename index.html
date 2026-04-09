@@ -580,18 +580,24 @@
     const maxIntentos = 50; // 5 segundos (50 * 100ms)
     
     function verificarLibrerias() {
-        if(typeof Html5QrcodeScanner !== 'undefined' && typeof firebase !== 'undefined') {
+        const firebaseCargado = typeof firebase !== 'undefined';
+        const scannerCargado = typeof Html5QrcodeScanner !== 'undefined';
+
+        if(firebaseCargado && scannerCargado) {
             libreriasListas = true;
             console.log('✓ Librerías cargadas correctamente');
-            // Aplicar traducciones y estilos personalizados
             aplicarTraducciones();
             init();
-        } else if(intentosVerificacion < maxIntentos) {
+        } else if(intentosVerificacion < maxIntentos && navigator.onLine) {
+            // Si hay internet, esperamos un poco a que carguen los CDNs
             intentosVerificacion++;
             setTimeout(verificarLibrerias, 100);
         } else {
-            console.error('✗ Error: Las librerías no se cargaron después de 5 segundos');
-            console.warn('Modo Offline Activo'); libreriasListas = true; init();
+            // ARRANQUE INSTANTÁNEO: Si no hay internet o pasó el tiempo, iniciamos con lo que haya
+            console.warn('🚀 Arranque instantáneo: Iniciando en modo local/offline');
+            libreriasListas = scannerCargado; 
+            if(firebaseCargado) aplicarTraducciones();
+            init();
         }
     }
     
@@ -701,6 +707,13 @@
             firebaseConnected = snap.val() === true;
             document.getElementById('connectionStatus').textContent = firebaseConnected ? '🟢 Sincronizado' : '🔴 Local';
             document.getElementById('connectionStatus').className = 'connection-status ' + (firebaseConnected ? 'online' : 'offline');
+            
+            // DISPARO DE SINCRONIZACIÓN INMEDIATA AL RECONECTAR
+            // Si acabamos de conectar, subimos lo que tenemos en LocalStorage para actualizar la nube
+            if(firebaseConnected) {
+                console.log('🔄 Reconexión detectada: Sincronizando datos locales con Firebase...');
+                sync(); 
+            }
         });
         db.ref('viveres_beta/data').on('value', snap => {
             const data = snap.val();
@@ -718,8 +731,11 @@
     }
 
     function sync() {
+        // Actualizar variables desde el DOM antes de guardar
         ivaPorcentaje = parseFloat(document.getElementById('ivaPorcentaje').value) || 0;
         stockMinimoGlobal = parseFloat(document.getElementById('stockMinimoGlobal').value) || 5;
+        
+        // 1. Guardado en LocalStorage (Siempre, incluso offline)
         localStorage.setItem('beta_items', JSON.stringify(items));
         localStorage.setItem('beta_ventas', JSON.stringify(ventas));
         localStorage.setItem('beta_creditos', JSON.stringify(creditos));
@@ -729,8 +745,20 @@
         localStorage.setItem('beta_tasa', tasaDolar);
         localStorage.setItem('beta_iva', ivaPorcentaje);
         localStorage.setItem('beta_stock_min_global', stockMinimoGlobal);
+        
+        // 2. Sincronización con Firebase (Solo si hay conexión activa)
         if(firebaseConnected && db && navigator.onLine) {
-            db.ref('viveres_beta/data').set({ items, ventas, creditos, cierres, proveedores, facturas, tasa: tasaDolar, iva: ivaPorcentaje, stockMinGlobal: stockMinimoGlobal });
+            console.log('☁️ Subiendo cambios a Firebase...');
+            db.ref('viveres_beta/data').set({ 
+                items, ventas, creditos, cierres, proveedores, facturas, 
+                tasa: tasaDolar, iva: ivaPorcentaje, stockMinGlobal: stockMinimoGlobal 
+            }).then(() => {
+                console.log('✅ Sincronización exitosa');
+            }).catch(err => {
+                console.error('❌ Error al sincronizar:', err);
+            });
+        } else {
+            console.log('💾 Cambios guardados localmente (Modo Offline)');
         }
     }
 
