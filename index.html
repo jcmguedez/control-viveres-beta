@@ -436,7 +436,7 @@
             </div>
             <div style="flex:1;">
                 <label>Cantidad</label>
-                <input type="number" id="cantidadFactura" step="0.01" placeholder="1">
+                <input type="number" id="cantidadFactura" step="0.01" value="0">
             </div>
         </div>
         <div class="input-row-two">
@@ -446,7 +446,7 @@
             </div>
             <div>
                 <label>Stock Minimo</label>
-                <input type="number" id="stockMinimoFactura" placeholder="5" step="0.01" value="5" min="0">
+                <input type="number" id="stockMinimoFactura" placeholder="Stock Mín." step="0.01" min="0">
             </div>
         </div>
         <div class="input-group">
@@ -528,6 +528,20 @@
             <div id="reporteFallas" style="font-size:0.85rem; margin-top:10px;"></div>
         </div>
         
+        <h2>💰 Costos Operativos del Día</h2>
+        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1;">
+                <label>Concepto</label>
+                <input type="text" id="conceptoCosto" placeholder="Ej: Alquiler, Luz, Sueldo..." class="search-input">
+            </div>
+            <div style="flex:1;">
+                <label>Monto (Bs.)</label>
+                <input type="number" id="montoCosto" placeholder="0.00" step="0.01" class="search-input">
+            </div>
+        </div>
+        <button class="btn-add" onclick="agregarCostoOperativo()" style="width:100%; margin-bottom:10px;">+ AÑADIR COSTO</button>
+        <div id="listaCostosOperativos" class="list-container" style="max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
+        
         <button class="btn-vender" onclick="cerrarDia()" style="width:100%; margin-bottom:10px;">🔒 CERRAR CAJA (ARCHIVAR)</button>
         <button class="btn-danger" onclick="cerrarMes()" style="width:100%; margin-bottom:20px;">📅 CIERRE MENSUAL</button>
 
@@ -559,7 +573,11 @@
 <div id="modalCredito" class="modal">
     <div class="modal-content">
         <h3>💳 Registrar Crédito</h3>
-        <div class="input-group"><label>Nombre del Cliente:</label><input type="text" id="nombreCliente" placeholder="Ej: Juan Perez"></div>
+        <div class="input-group">
+            <label>Nombre del Cliente:</label>
+            <input type="text" id="nombreCliente" placeholder="Ej: Juan Perez" list="listaClientesSugeridos">
+            <datalist id="listaClientesSugeridos"></datalist>
+        </div>
         <div class="stats-box">
             <div class="stats-label">Monto a Deber:</div>
             <div class="stats-value" id="montoCredito">Bs. 0,00</div>
@@ -631,7 +649,7 @@
         verificarLibrerias();
     }
     
-    let items = [], ventas = [], creditos = [], carrito = [], cierres = [], proveedores = [], facturas = [];
+    let items = [], ventas = [], creditos = [], carrito = [], cierres = [], proveedores = [], facturas = [], clientes = [], costosOperativos = [];
     let carritoFacturaTemp = []; // Carrito temporal para productos de factura actual
     let tasaDolar = 36.50, diaActual = new Date().toLocaleDateString('es-ES'), ivaPorcentaje = 16, stockMinimoGlobal = 5;
     let db = null, firebaseConnected = false, itemPendientePeso = null;
@@ -648,6 +666,8 @@
         cierres = JSON.parse(localStorage.getItem('beta_cierres')) || [];
         proveedores = JSON.parse(localStorage.getItem('beta_proveedores')) || [];
         facturas = JSON.parse(localStorage.getItem('beta_facturas')) || [];
+        clientes = JSON.parse(localStorage.getItem('beta_clientes')) || [];
+        costosOperativos = JSON.parse(localStorage.getItem('beta_costos_operativos')) || [];
         tasaDolar = parseFloat(localStorage.getItem('beta_tasa')) || 36.50;
         ivaPorcentaje = parseFloat(localStorage.getItem('beta_iva')) || 16;
         stockMinimoGlobal = parseFloat(localStorage.getItem('beta_stock_min_global')) || 5;
@@ -720,6 +740,8 @@
             if(data) {
                 items = data.items || []; ventas = data.ventas || []; creditos = data.creditos || []; 
                 cierres = data.cierres || []; proveedores = data.proveedores || []; facturas = data.facturas || [];
+                clientes = data.clientes || [];
+                costosOperativos = data.costosOperativos || [];
                 tasaDolar = data.tasa || tasaDolar;
                 ivaPorcentaje = data.iva || ivaPorcentaje;
                 stockMinimoGlobal = data.stockMinGlobal || stockMinimoGlobal;
@@ -742,6 +764,8 @@
         localStorage.setItem('beta_cierres', JSON.stringify(cierres));
         localStorage.setItem('beta_proveedores', JSON.stringify(proveedores));
         localStorage.setItem('beta_facturas', JSON.stringify(facturas));
+        localStorage.setItem('beta_clientes', JSON.stringify(clientes));
+        localStorage.setItem('beta_costos_operativos', JSON.stringify(costosOperativos));
         localStorage.setItem('beta_tasa', tasaDolar);
         localStorage.setItem('beta_iva', ivaPorcentaje);
         localStorage.setItem('beta_stock_min_global', stockMinimoGlobal);
@@ -750,7 +774,7 @@
         if(firebaseConnected && db && navigator.onLine) {
             console.log('☁️ Subiendo cambios a Firebase...');
             db.ref('viveres_beta/data').set({ 
-                items, ventas, creditos, cierres, proveedores, facturas, 
+                items, ventas, creditos, cierres, proveedores, facturas, clientes, costosOperativos,
                 tasa: tasaDolar, iva: ivaPorcentaje, stockMinGlobal: stockMinimoGlobal 
             }).then(() => {
                 console.log('✅ Sincronización exitosa');
@@ -1380,6 +1404,13 @@
 
         renderCarrito();
         renderProveedores();
+        
+        // Actualizar totales diarios considerando costos
+        const costosDelDiaActual = costosOperativos.filter(c => c.fecha === diaActual).reduce((sum, c) => sum + c.monto, 0);
+        if(costosDelDiaActual > 0) {
+            const stats = document.querySelector('.stats-box:nth-of-type(3)');
+            if(stats) stats.title = `Ganancia Neta = Ganancia Bruta (Bs. ${fM(gan)}) - Costos (Bs. ${fM(costosDelDiaActual)})`;
+        }
         const vHoy = ventas.filter(v => v.dia === diaActual);
         let ing = 0, gan = 0, ivaRec = 0;
         vHoy.forEach(v => { 
@@ -1391,15 +1422,77 @@
         });
         document.getElementById('ingresosTotales').textContent = 'Bs. ' + fM(ing);
         document.getElementById('ivaRecaudado').textContent = 'Bs. ' + fM(ivaRec);
-        document.getElementById('gananciaEstimada').textContent = 'Bs. ' + fM(gan);
+        // Calcular ganancia neta considerando costos del día
+        const costosDelDia = costosOperativos.filter(c => c.fecha === diaActual).reduce((sum, c) => sum + c.monto, 0);
+        const gananciaNeta = gan - costosDelDia;
+        document.getElementById('gananciaEstimada').textContent = 'Bs. ' + fM(gananciaNeta);
+        document.getElementById('gananciaEstimada').title = `Ganancia Bruta: Bs. ${fM(gan)} - Costos: Bs. ${fM(costosDelDia)}`;
         
         document.getElementById('ventasHistorial').innerHTML = vHoy.reverse().map(v => `
             <div class="item ${v.anulada ? 'anulada' : ''}">
                 <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)} ${v.ivaMonto > 0 ? '(Inc. IVA)' : ''} (${v.hora})
+                <small style="color:var(--primary); font-weight:bold;">Ganancia: Bs. ${fM(v.ganancia)}</small>
                 ${!v.anulada ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : '<b>[ANULADA]</b>'}
             </div>`).join('');
-        document.getElementById('listaCreditos').innerHTML = creditos.map((c, idx) => `<div class="item"><b>${c.cliente}</b>: Bs. ${fM(c.monto)}<br><small>${c.detalle}</small><br><button onclick="pagarCredito(${idx})" style="background:var(--primary); padding:5px; margin-top:5px; font-size:0.7rem;">PAGADO</button></div>`).join('') || 'Sin deudas';
-        document.getElementById('historialCierres').innerHTML = cierres.slice().reverse().map(c => `<div class="item cierre-item"><b>${c.tipo}: ${c.fecha}</b><br>Ventas: Bs. ${fM(c.ingresos)}<br>IVA: Bs. ${fM(c.iva || 0)}<br>Ganancia: Bs. ${fM(c.ganancia)}</div>`).join('') || 'No hay cierres';
+        // Agrupar créditos por cliente
+        const creditosAgrupados = {};
+        creditos.forEach((c, idx) => {
+            if(!creditosAgrupados[c.cliente]) {
+                creditosAgrupados[c.cliente] = { total: 0, items: [] };
+            }
+            creditosAgrupados[c.cliente].total += c.monto;
+            creditosAgrupados[c.cliente].items.push({ ...c, originalIdx: idx });
+        });
+
+        let htmlCreditos = "";
+        for(const cliente in creditosAgrupados) {
+            const grupo = creditosAgrupados[cliente];
+            const detallesHtml = grupo.items.map(it => `
+                <div style="font-size:0.75rem; border-top:1px solid #eee; padding:5px 0; display:flex; justify-content:space-between; align-items:center;">
+                    <span>${it.fecha}: ${it.detalle} (Bs. ${fM(it.monto)})</span>
+                    <button onclick="pagarCredito(${it.originalIdx})" style="background:var(--primary); color:white; border:none; padding:2px 5px; border-radius:3px; font-size:0.6rem; cursor:pointer;">PAGAR</button>
+                </div>
+            `).join('');
+
+            htmlCreditos += `
+                <div class="item" style="border-left-color: var(--danger);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <b style="font-size:1rem;">${cliente}</b>
+                        <span style="color:var(--danger); font-weight:bold; font-size:1.1rem;">Bs. ${fM(grupo.total)}</span>
+                    </div>
+                    <div style="background:#fff; border-radius:5px; padding:5px;">
+                        ${detallesHtml}
+                    </div>
+                </div>
+            `;
+        }
+        document.getElementById('listaCreditos').innerHTML = htmlCreditos || '<p style="text-align:center; color:#999; padding:20px;">Sin deudas pendientes</p>';
+        // Renderizar costos operativos del día
+        const costosHoy = costosOperativos.filter(c => c.fecha === diaActual);
+        let totalCostosHoy = 0;
+        costosHoy.forEach(c => { totalCostosHoy += c.monto; });
+        document.getElementById('listaCostosOperativos').innerHTML = costosHoy.map(c => `
+            <div class="item" style="border-left-color: var(--warning);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <b>${c.concepto}</b><br>
+                        <small style="color:#666;">Bs. ${fM(c.monto)}</small>
+                    </div>
+                    <button onclick="eliminarCostoOperativo(${c.id})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:0.7rem;">ELIMINAR</button>
+                </div>
+            </div>
+        `).join('') || '<p style="text-align:center; color:#999; padding:10px;">Sin costos registrados</p>';
+        
+        document.getElementById('historialCierres').innerHTML = cierres.slice().reverse().map(c => `
+            <div class="item cierre-item">
+                <b>${c.tipo}: ${c.fecha}</b><br>
+                Ventas: Bs. ${fM(c.ingresos)}<br>
+                IVA: Bs. ${fM(c.iva || 0)}<br>
+                Ganancia Bruta: Bs. ${fM(c.ganancia)}
+                ${c.costosOperativos ? `<br><span style="color:var(--warning);">Costos: Bs. ${fM(c.costosOperativos)}</span>` : ''}
+                ${c.gananciaNeta ? `<br><span style="color:var(--primary); font-weight:bold;">Ganancia Neta: Bs. ${fM(c.gananciaNeta)}</span>` : ''}
+            </div>
+        `).join('') || 'No hay cierres';
     }
 
     function buscarVenta() {
@@ -1494,8 +1587,8 @@
     }
 
     function finalizarVenta(esCredito) {
-        const cliente = document.getElementById('nombreCliente').value.trim();
-        if(esCredito && !cliente) return alert('Escribe el nombre');
+        if(!carrito.length) return alert('Carrito vacío');
+        
         let subGravV = 0, subExentoV = 0, ganV = 0, det = "";
         const conIVA = document.getElementById('aplicarIVA').checked;
         
@@ -1503,12 +1596,30 @@
             const subItem = c.precioVenta * c.q * tasaDolar;
             if(c.exento) subExentoV += subItem; else subGravV += subItem;
             ganV += (c.precioVenta - c.costo) * c.q * tasaDolar;
-            det += `${c.unidad === 'KG' ? c.q.toFixed(3)+'Kg' : c.q} ${c.nombre}, `;
-            items.find(x => x.id === c.id).cantidad -= c.q;
+            det += `${c.unidad === 'KG' ? parseFloat(c.q).toFixed(3)+'Kg' : c.q} ${c.nombre}, `;
         });
         
         const ivaMonto = conIVA ? (subGravV * (ivaPorcentaje / 100)) : 0;
         const totalV = subGravV + subExentoV + ivaMonto;
+
+        if(totalV <= 0) return alert('El monto de la venta debe ser mayor a 0');
+
+        let clienteNombre = "";
+        if(esCredito) {
+            clienteNombre = document.getElementById('nombreCliente').value.trim();
+            if(!clienteNombre) return alert('Escribe el nombre del cliente');
+            
+            // Guardar en maestro de clientes si no existe
+            if(!clientes.find(c => c.nombre.toLowerCase() === clienteNombre.toLowerCase())) {
+                clientes.push({ nombre: clienteNombre, id: Date.now() });
+            }
+        }
+
+        // Descontar stock solo al confirmar éxito
+        carrito.forEach(c => {
+            const item = items.find(x => x.id === c.id);
+            if(item) item.cantidad -= c.q;
+        });
         
         ventas.push({ 
             id: Date.now(), 
@@ -1524,8 +1635,23 @@
             anulada: false 
         });
         
-        if(esCredito) creditos.push({ cliente, monto: totalV, detalle: det.slice(0,-2), fecha: diaActual });
-        carrito = []; cerrarModalCredito(); sync(); render(); alert('Venta guardada');
+        if(esCredito) {
+            creditos.push({ 
+                id: Date.now(),
+                cliente: clienteNombre, 
+                monto: totalV, 
+                detalle: det.slice(0,-2), 
+                fecha: diaActual,
+                pagado: false
+            });
+        }
+        
+        carrito = []; 
+        document.getElementById('nombreCliente').value = '';
+        cerrarModalCredito(); 
+        sync(); 
+        render(); 
+        alert('Venta guardada con éxito');
     }
 
     function anularVenta(id) {
@@ -1548,31 +1674,104 @@
         }
     }
 
+    function agregarCostoOperativo() {
+        const concepto = document.getElementById('conceptoCosto').value.trim();
+        const monto = parseFloat(document.getElementById('montoCosto').value);
+        
+        if(!concepto) return alert('Ingresa el concepto del costo');
+        if(isNaN(monto) || monto <= 0) return alert('Ingresa un monto válido');
+        
+        costosOperativos.push({
+            id: Date.now(),
+            concepto: concepto,
+            monto: monto,
+            fecha: diaActual
+        });
+        
+        document.getElementById('conceptoCosto').value = '';
+        document.getElementById('montoCosto').value = '';
+        sync();
+        render();
+    }
+    
+    function eliminarCostoOperativo(id) {
+        costosOperativos = costosOperativos.filter(c => c.id !== id);
+        sync();
+        render();
+    }
+
     function cerrarDia() {
         const vHoy = ventas.filter(v => v.dia === diaActual && !v.anulada);
         if(!vHoy.length) return alert('No hay ventas hoy');
-        if(confirm('¿Cerrar caja? Se guardarán los totales de ventas, IVA y ganancias.')) {
-            let ing = 0, gan = 0, iva = 0;
+        if(confirm('¿Cerrar caja? Se guardarán los totales de ventas, IVA, ganancias y costos operativos.')) {
+            let ing = 0, gan = 0, iva = 0, costos = 0;
             vHoy.forEach(v => { ing += v.total; gan += v.ganancia; iva += (v.ivaMonto || 0); });
-            cierres.push({ fecha: diaActual, ingresos: ing, iva: iva, ganancia: gan, tipo: 'DIARIO' });
+            
+            // Sumar costos operativos del día
+            const costosHoy = costosOperativos.filter(c => c.fecha === diaActual);
+            costosHoy.forEach(c => { costos += c.monto; });
+            
+            const gananciaNeta = gan - costos;
+            
+            cierres.push({ 
+                fecha: diaActual, 
+                ingresos: ing, 
+                iva: iva, 
+                ganancia: gan,
+                costosOperativos: costos,
+                gananciaNeta: gananciaNeta,
+                tipo: 'DIARIO' 
+            });
+            
             ventas = ventas.filter(v => v.dia !== diaActual);
-            sync(); render(); alert('Caja cerrada y archivada.');
+            costosOperativos = costosOperativos.filter(c => c.fecha !== diaActual);
+            sync(); 
+            render(); 
+            alert(`Caja cerrada.\nGanancia Bruta: Bs. ${fM(gan)}\nCostos: Bs. ${fM(costos)}\nGanancia Neta: Bs. ${fM(gananciaNeta)}`);
         }
     }
 
     function cerrarMes() {
         if(confirm('¿Realizar cierre mensual? Se agruparán los cierres diarios.')) {
-            let ing = 0, gan = 0, iva = 0;
+            let ing = 0, gan = 0, iva = 0, costos = 0, gananciaNeta = 0;
             const cierresDiarios = cierres.filter(c => c.tipo === 'DIARIO');
-            cierresDiarios.forEach(c => { ing += c.ingresos; gan += c.ganancia; iva += (c.iva || 0); });
+            cierresDiarios.forEach(c => { 
+                ing += c.ingresos; 
+                gan += c.ganancia; 
+                iva += (c.iva || 0);
+                costos += (c.costosOperativos || 0);
+                gananciaNeta += (c.gananciaNeta || c.ganancia);
+            });
             const mesAnio = diaActual.split('/')[1] + '/' + diaActual.split('/')[2];
             cierres = cierres.filter(c => c.tipo !== 'DIARIO');
-            cierres.push({ fecha: 'MES ' + mesAnio, ingresos: ing, iva: iva, ganancia: gan, tipo: 'MENSUAL' });
-            sync(); render(); alert('Cierre mensual completado.');
+            cierres.push({ 
+                fecha: 'MES ' + mesAnio, 
+                ingresos: ing, 
+                iva: iva, 
+                ganancia: gan,
+                costosOperativos: costos,
+                gananciaNeta: gananciaNeta,
+                tipo: 'MENSUAL' 
+            });
+            sync(); 
+            render(); 
+            alert(`Cierre Mensual Completado\nIngresos: Bs. ${fM(ing)}\nGanancia Bruta: Bs. ${fM(gan)}\nCostos Operativos: Bs. ${fM(costos)}\nGanancia Neta: Bs. ${fM(gananciaNeta)}`);
         }
     }
 
-    function abrirModalCredito() { if(carrito.length) { document.getElementById('montoCredito').textContent = document.getElementById('totalCarrito').textContent; document.getElementById('modalCredito').classList.add('active'); } }
+    function abrirModalCredito() { 
+        if(!carrito.length) return alert('Carrito vacío');
+        
+        // Cargar sugerencias de clientes
+        const datalist = document.getElementById('listaClientesSugeridos');
+        if(datalist) {
+            datalist.innerHTML = clientes.map(c => `<option value="${c.nombre}">`).join('');
+        }
+        
+        document.getElementById('montoCredito').textContent = document.getElementById('totalCarrito').textContent; 
+        document.getElementById('modalCredito').classList.add('active'); 
+        document.getElementById('nombreCliente').focus();
+    }
     function cerrarModalCredito() { document.getElementById('modalCredito').classList.remove('active'); }
     function pagarCredito(idx) { if(confirm('¿Pagado?')) { creditos.splice(idx,1); sync(); render(); } }
     function limpiarCarrito() { if(confirm('¿Vaciar?')) { carrito = []; renderCarrito(); } }
@@ -1668,20 +1867,28 @@
     }
 
     function anadirProductoFactura() {
-        const proveedorId = document.getElementById('proveedorFactura').value;
-        const nroFactura = document.getElementById('nroFactura').value;
+        const f_prov = document.getElementById('proveedorFactura');
+        const f_nro = document.getElementById('nroFactura');
+        const f_prod = document.getElementById('productoFactura');
+        const f_costo = document.getElementById('costoUnitarioFactura');
+        const f_cant = document.getElementById('cantidadFactura');
+        
+        if(!f_prov.value) { alert('Selecciona un proveedor'); document.getElementById('proveedorFilterInput').focus(); return; }
+        if(!f_nro.value) { alert('Ingresa el número de factura'); f_nro.focus(); return; }
+        if(!f_prod.value) { alert('Ingresa el nombre del producto'); f_prod.focus(); return; }
+        if(!f_costo.value || isNaN(parseFloat(f_costo.value))) { alert('Ingresa el costo'); f_costo.focus(); return; }
+        if(!f_cant.value || parseFloat(f_cant.value) <= 0) { alert('Ingresa una cantidad válida'); f_cant.focus(); return; }
+
+        const proveedorId = f_prov.value;
+        const nroFactura = f_nro.value;
         const sku = document.getElementById('skuFactura').value;
-        const producto = document.getElementById('productoFactura').value;
-        let costoUnitario = parseFloat(document.getElementById('costoUnitarioFactura').value);
+        const producto = f_prod.value;
+        let costoUnitario = parseFloat(f_costo.value);
         const moneda = document.getElementById('monedaCostoFactura').value;
-        const cantidad = parseFloat(document.getElementById('cantidadFactura').value);
+        const cantidad = parseFloat(f_cant.value);
         const aplicarIva = document.getElementById('ivaFactura').checked;
         const beneficio = parseFloat(document.getElementById('beneficioFactura').value) || 30;
-        const stockMinimo = parseFloat(document.getElementById('stockMinimoFactura').value) || 5;
-        
-        if(!proveedorId || !nroFactura || !producto || isNaN(costoUnitario) || isNaN(cantidad)) {
-            return alert('Datos incompletos');
-        }
+        const stockMinimo = parseFloat(document.getElementById('stockMinimoFactura').value) || stockMinimoGlobal;
 
         // Convertir a dólares para el almacenamiento interno (si está en Bs)
         const costoUSD = moneda === 'BS' ? costoUnitario / tasaDolar : costoUnitario;
@@ -1714,7 +1921,7 @@
         document.getElementById('skuFactura').value = '';
         document.getElementById('productoFactura').value = '';
         document.getElementById('costoUnitarioFactura').value = '';
-        document.getElementById('cantidadFactura').value = '1';
+        document.getElementById('cantidadFactura').value = '0';
         document.getElementById('ivaFactura').checked = true;
         document.getElementById('totalFacturaPreview').textContent = 'Bs. 0,00';
         document.getElementById('skuFactura').focus();
@@ -1832,9 +2039,9 @@
         document.getElementById('productoFactura').value = '';
         document.getElementById('costoUnitarioFactura').value = '';
         document.getElementById('monedaCostoFactura').value = 'BS';
-        document.getElementById('cantidadFactura').value = '1';
+        document.getElementById('cantidadFactura').value = '0';
         document.getElementById('beneficioFactura').value = '30';
-        document.getElementById('stockMinimoFactura').value = '5';
+        document.getElementById('stockMinimoFactura').value = stockMinimoGlobal;
         document.getElementById('ivaFactura').checked = true;
         document.getElementById('totalFacturaPreview').textContent = 'Bs. 0,00';
         document.getElementById('searchResultsFactura').innerHTML = '';
