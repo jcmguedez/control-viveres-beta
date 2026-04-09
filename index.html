@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <title>Control de Víveres - Pro Contable v2</title>
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkNvbnRyb2wgZGUgVsOtdmVyZXMgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJWw612ZXJlcyBQcm8iLAogICJkZXNjcmlwdGlvbiI6ICJTaXN0ZW1hIGRlIENvbnRyb2wgZGUgVsOtdmVyZXMgeSBQcm92ZWVkb3JlcyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZjRmN2Y2IiwKICAidGhlbWVfY29sb3IiOiAiIzI3YWU2MCIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImljb24ucG5nIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9LAogICAgewogICAgICAic3JjIjogImljb24ucG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9CiAgXQp9">
     <style>
         :root {
             --primary: #27ae60;
@@ -580,13 +581,23 @@
     const maxIntentos = 50; // 5 segundos (50 * 100ms)
     
     function verificarLibrerias() {
-        if(typeof Html5QrcodeScanner !== 'undefined' && typeof firebase !== 'undefined') {
+        const firebaseCargado = typeof firebase !== 'undefined';
+        const qrcodeCargado = typeof Html5QrcodeScanner !== 'undefined';
+        
+        if(firebaseCargado && qrcodeCargado) {
             libreriasListas = true;
-            console.log('✓ Librerías cargadas correctamente');
-            // Aplicar traducciones y estilos personalizados
+            console.log('✓ Librerías cargadas');
             aplicarTraducciones();
             init();
-        } else if(intentosVerificacion < maxIntentos) {
+        } else if(intentosVerificacion < 20) { // Reducir tiempo de espera a 2 segundos para mayor fluidez
+            intentosVerificacion++;
+            setTimeout(verificarLibrerias, 100);
+        } else {
+            console.warn('! Modo Offline Forzado');
+            libreriasListas = true;
+            init();
+        }
+    } else if(intentosVerificacion < maxIntentos) {
             intentosVerificacion++;
             setTimeout(verificarLibrerias, 100);
         } else {
@@ -2026,5 +2037,48 @@
     });
     // init() es llamado por verificarLibrerias() una vez que Firebase y html5-qrcode están cargados
 </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        const swCode = `
+            const CACHE_NAME = 'viveres-pro-v3';
+            const URLS_TO_CACHE = [
+                './',
+                'https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js',
+                'https://www.gstatic.com/firebasejs/8.8.1/firebase-database.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js'
+            ];
+
+            self.addEventListener('install', event => {
+                event.waitUntil(
+                    caches.open(CACHE_NAME).then(cache => cache.addAll(URLS_TO_CACHE))
+                );
+            });
+
+            self.addEventListener('fetch', event => {
+                event.respondWith(
+                    caches.match(event.request).then(response => {
+                        return response || fetch(event.request).catch(() => {
+                            if (event.request.mode === 'navigate') {
+                                return caches.match('./');
+                            }
+                        });
+                    })
+                );
+            });
+        `;
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).then(reg => {
+            console.log('Service Worker registrado con éxito');
+        }).catch(err => {
+            console.log('Error al registrar Service Worker:', err);
+        });
+    });
+}
+</script>
+
 </body>
 </html>
