@@ -13,7 +13,6 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <title>Control de Víveres - Pro Contable v2</title>
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkNvbnRyb2wgZGUgVsOtdmVyZXMgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJWw612ZXJlcyBQcm8iLAogICJkZXNjcmlwdGlvbiI6ICJTaXN0ZW1hIGRlIENvbnRyb2wgZGUgVsOtdmVyZXMgeSBQcm92ZWVkb3JlcyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZjRmN2Y2IiwKICAidGhlbWVfY29sb3IiOiAiIzI3YWU2MCIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImljb24ucG5nIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9LAogICAgewogICAgICAic3JjIjogImljb24ucG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9CiAgXQp9">
     <style>
         :root {
             --primary: #27ae60;
@@ -569,10 +568,10 @@
     </div>
 </div>
 
-<script async src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
-<script async src="https://www.gstatic.com/firebasejs/8.8.1/firebase-database.js"></script>
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js"></script>
 
 <script>
     // Esperar a que las librerías estén cargadas
@@ -580,24 +579,14 @@
     let intentosVerificacion = 0;
     const maxIntentos = 50; // 5 segundos (50 * 100ms)
     
-    function verificarLibrerias() { init(); return; 
-        const firebaseCargado = typeof firebase !== 'undefined';
-        const qrcodeCargado = typeof Html5QrcodeScanner !== 'undefined';
-        
-        if(firebaseCargado && qrcodeCargado) {
+    function verificarLibrerias() {
+        if(typeof Html5QrcodeScanner !== 'undefined' && typeof firebase !== 'undefined') {
             libreriasListas = true;
-            console.log('✓ Librerías cargadas');
+            console.log('✓ Librerías cargadas correctamente');
+            // Aplicar traducciones y estilos personalizados
             aplicarTraducciones();
             init();
-        } else if(intentosVerificacion < 20) { // Reducir tiempo de espera a 2 segundos para mayor fluidez
-            intentosVerificacion++;
-            setTimeout(verificarLibrerias, 100);
-        } else {
-            console.warn('! Modo Offline Forzado');
-            libreriasListas = true;
-            init();
-        }
-    } else if(intentosVerificacion < maxIntentos) {
+        } else if(intentosVerificacion < maxIntentos) {
             intentosVerificacion++;
             setTimeout(verificarLibrerias, 100);
         } else {
@@ -688,7 +677,7 @@
         appId: "1:1034847368340:web:4584d1502544f33149f081"
     };
 
-    function conectarFirebase() { if(typeof firebase === "undefined") return; 
+    function conectarFirebase() {
         const projectId = document.getElementById('projectId').value.trim();
         const apiKey = document.getElementById('apiKey').value.trim();
         
@@ -2037,8 +2026,5 @@
     });
     // init() es llamado por verificarLibrerias() una vez que Firebase y html5-qrcode están cargados
 </script>
-
-<script>
-
 </body>
 </html>
