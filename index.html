@@ -528,19 +528,19 @@
             <div id="reporteFallas" style="font-size:0.85rem; margin-top:10px;"></div>
         </div>
         
-        <h2>💰 Costos Operativos del Día</h2>
+        <h2>💰 Gastos Operativos del Día</h2>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
             <div style="flex:1;">
                 <label>Concepto</label>
-                <input type="text" id="conceptoCosto" placeholder="Ej: Alquiler, Luz, Sueldo..." class="search-input">
+                <input type="text" id="conceptoGasto" placeholder="Ej: Alquiler, Luz, Sueldo..." class="search-input">
             </div>
             <div style="flex:1;">
                 <label>Monto (Bs.)</label>
-                <input type="number" id="montoCosto" placeholder="0.00" step="0.01" class="search-input">
+                <input type="number" id="montoGasto" placeholder="0.00" step="0.01" class="search-input">
             </div>
         </div>
-        <button class="btn-add" onclick="agregarCostoOperativo()" style="width:100%; margin-bottom:10px;">+ AÑADIR COSTO</button>
-        <div id="listaCostosOperativos" class="list-container" style="max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
+        <button class="btn-add" onclick="agregarGastoOperativo()" style="width:100%; margin-bottom:10px;">+ AÑADIR GASTO</button>
+        <div id="listaGastosOperativos" class="list-container" style="max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
         
         <button class="btn-vender" onclick="cerrarDia()" style="width:100%; margin-bottom:10px;">🔒 CERRAR CAJA (ARCHIVAR)</button>
         <button class="btn-danger" onclick="cerrarMes()" style="width:100%; margin-bottom:20px;">📅 CIERRE MENSUAL</button>
@@ -649,7 +649,7 @@
         verificarLibrerias();
     }
     
-    let items = [], ventas = [], creditos = [], carrito = [], cierres = [], proveedores = [], facturas = [], clientes = [], costosOperativos = [];
+    let items = [], ventas = [], creditos = [], carrito = [], cierres = [], proveedores = [], facturas = [], clientes = [], gastosOperativos = [];
     let carritoFacturaTemp = []; // Carrito temporal para productos de factura actual
     let tasaDolar = 36.50, diaActual = new Date().toLocaleDateString('es-ES'), ivaPorcentaje = 16, stockMinimoGlobal = 5;
     let db = null, firebaseConnected = false, itemPendientePeso = null;
@@ -667,7 +667,7 @@
         proveedores = JSON.parse(localStorage.getItem('beta_proveedores')) || [];
         facturas = JSON.parse(localStorage.getItem('beta_facturas')) || [];
         clientes = JSON.parse(localStorage.getItem('beta_clientes')) || [];
-        costosOperativos = JSON.parse(localStorage.getItem('beta_costos_operativos')) || [];
+        gastosOperativos = JSON.parse(localStorage.getItem('beta_gastos_operativos')) || [];
         tasaDolar = parseFloat(localStorage.getItem('beta_tasa')) || 36.50;
         ivaPorcentaje = parseFloat(localStorage.getItem('beta_iva')) || 16;
         stockMinimoGlobal = parseFloat(localStorage.getItem('beta_stock_min_global')) || 5;
@@ -741,7 +741,7 @@
                 items = data.items || []; ventas = data.ventas || []; creditos = data.creditos || []; 
                 cierres = data.cierres || []; proveedores = data.proveedores || []; facturas = data.facturas || [];
                 clientes = data.clientes || [];
-                costosOperativos = data.costosOperativos || [];
+                gastosOperativos = data.gastosOperativos || [];
                 tasaDolar = data.tasa || tasaDolar;
                 ivaPorcentaje = data.iva || ivaPorcentaje;
                 stockMinimoGlobal = data.stockMinGlobal || stockMinimoGlobal;
@@ -765,7 +765,7 @@
         localStorage.setItem('beta_proveedores', JSON.stringify(proveedores));
         localStorage.setItem('beta_facturas', JSON.stringify(facturas));
         localStorage.setItem('beta_clientes', JSON.stringify(clientes));
-        localStorage.setItem('beta_costos_operativos', JSON.stringify(costosOperativos));
+        localStorage.setItem('beta_gastos_operativos', JSON.stringify(gastosOperativos));
         localStorage.setItem('beta_tasa', tasaDolar);
         localStorage.setItem('beta_iva', ivaPorcentaje);
         localStorage.setItem('beta_stock_min_global', stockMinimoGlobal);
@@ -774,7 +774,7 @@
         if(firebaseConnected && db && navigator.onLine) {
             console.log('☁️ Subiendo cambios a Firebase...');
             db.ref('viveres_beta/data').set({ 
-                items, ventas, creditos, cierres, proveedores, facturas, clientes, costosOperativos,
+                items, ventas, creditos, cierres, proveedores, facturas, clientes, gastosOperativos,
                 tasa: tasaDolar, iva: ivaPorcentaje, stockMinGlobal: stockMinimoGlobal 
             }).then(() => {
                 console.log('✅ Sincronización exitosa');
@@ -1405,11 +1405,11 @@
         renderCarrito();
         renderProveedores();
         
-        // Actualizar totales diarios considerando costos
-        const costosDelDiaActual = costosOperativos.filter(c => c.fecha === diaActual).reduce((sum, c) => sum + c.monto, 0);
+        // Actualizar totales diarios considerando gastos
+        const costosDelDiaActual = gastosOperativos.filter(c => c.fecha === diaActual).reduce((sum, c) => sum + c.monto, 0);
         if(costosDelDiaActual > 0) {
             const stats = document.querySelector('.stats-box:nth-of-type(3)');
-            if(stats) stats.title = `Ganancia Neta = Ganancia Bruta (Bs. ${fM(gan)}) - Costos (Bs. ${fM(costosDelDiaActual)})`;
+            if(stats) stats.title = `Ganancia Neta = Ganancia Bruta (Bs. ${fM(gan)}) - Gastos (Bs. ${fM(costosDelDiaActual)})`;
         }
         const vHoy = ventas.filter(v => v.dia === diaActual);
         let ing = 0, gan = 0, ivaRec = 0;
@@ -1422,11 +1422,12 @@
         });
         document.getElementById('ingresosTotales').textContent = 'Bs. ' + fM(ing);
         document.getElementById('ivaRecaudado').textContent = 'Bs. ' + fM(ivaRec);
-        // Calcular ganancia neta considerando costos del día
-        const costosDelDia = costosOperativos.filter(c => c.fecha === diaActual).reduce((sum, c) => sum + c.monto, 0);
+        // Calcular ganancia neta considerando gastos del día
+        const costosDelDia = gastosOperativos.filter(c => c.fecha === diaActual).reduce((sum, c) => sum + c.monto, 0);
+        console.log('Gastos del día para ganancia neta:', costosDelDia);
         const gananciaNeta = gan - costosDelDia;
         document.getElementById('gananciaEstimada').textContent = 'Bs. ' + fM(gananciaNeta);
-        document.getElementById('gananciaEstimada').title = `Ganancia Bruta: Bs. ${fM(gan)} - Costos: Bs. ${fM(costosDelDia)}`;
+        document.getElementById('gananciaEstimada').title = `Ganancia Bruta: Bs. ${fM(gan)} - Gastos: Bs. ${fM(costosDelDia)}`;
         
         document.getElementById('ventasHistorial').innerHTML = vHoy.reverse().map(v => `
             <div class="item ${v.anulada ? 'anulada' : ''}">
@@ -1467,21 +1468,26 @@
             `;
         }
         document.getElementById('listaCreditos').innerHTML = htmlCreditos || '<p style="text-align:center; color:#999; padding:20px;">Sin deudas pendientes</p>';
-        // Renderizar costos operativos del día
-        const costosHoy = costosOperativos.filter(c => c.fecha === diaActual);
-        let totalCostosHoy = 0;
-        costosHoy.forEach(c => { totalCostosHoy += c.monto; });
-        document.getElementById('listaCostosOperativos').innerHTML = costosHoy.map(c => `
-            <div class="item" style="border-left-color: var(--warning);">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+        // Renderizar gastos operativos del día
+        const gastosHoy = gastosOperativos.filter(c => c.fecha === diaActual);
+        let totalGastosHoy = 0;
+        gastosHoy.forEach(c => { totalGastosHoy += c.monto; });
+        
+        console.log('Gastos del día (' + diaActual + '):', gastosHoy);
+        console.log('Total gastos:', totalGastosHoy);
+        
+        const listaGastosElement = document.getElementById('listaGastosOperativos');
+        if(listaGastosElement) {
+            listaGastosElement.innerHTML = gastosHoy.length > 0 ? gastosHoy.map(c => `
+                <div class="item" style="border-left-color: var(--warning); display:flex; justify-content:space-between; align-items:center; padding:10px;">
                     <div>
                         <b>${c.concepto}</b><br>
                         <small style="color:#666;">Bs. ${fM(c.monto)}</small>
                     </div>
-                    <button onclick="eliminarCostoOperativo(${c.id})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:0.7rem;">ELIMINAR</button>
+                    <button onclick="eliminarGastoOperativo(${c.id})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:0.7rem; white-space:nowrap;">ELIMINAR</button>
                 </div>
-            </div>
-        `).join('') || '<p style="text-align:center; color:#999; padding:10px;">Sin costos registrados</p>';
+            `).join('') : '<p style="text-align:center; color:#999; padding:10px;">Sin gastos registrados</p>';
+        }
         
         document.getElementById('historialCierres').innerHTML = cierres.slice().reverse().map(c => `
             <div class="item cierre-item">
@@ -1489,7 +1495,7 @@
                 Ventas: Bs. ${fM(c.ingresos)}<br>
                 IVA: Bs. ${fM(c.iva || 0)}<br>
                 Ganancia Bruta: Bs. ${fM(c.ganancia)}
-                ${c.costosOperativos ? `<br><span style="color:var(--warning);">Costos: Bs. ${fM(c.costosOperativos)}</span>` : ''}
+                ${c.gastosOperativos ? `<br><span style="color:var(--warning);">Costos: Bs. ${fM(c.gastosOperativos)}</span>` : ''}
                 ${c.gananciaNeta ? `<br><span style="color:var(--primary); font-weight:bold;">Ganancia Neta: Bs. ${fM(c.gananciaNeta)}</span>` : ''}
             </div>
         `).join('') || 'No hay cierres';
@@ -1674,30 +1680,51 @@
         }
     }
 
-    function agregarCostoOperativo() {
-        const concepto = document.getElementById('conceptoCosto').value.trim();
-        const monto = parseFloat(document.getElementById('montoCosto').value);
+    function agregarGastoOperativo() {
+        const conceptoInput = document.getElementById('conceptoGasto');
+        const montoInput = document.getElementById('montoGasto');
+        const concepto = conceptoInput.value.trim();
+        const monto = parseFloat(montoInput.value);
         
-        if(!concepto) return alert('Ingresa el concepto del costo');
-        if(isNaN(monto) || monto <= 0) return alert('Ingresa un monto válido');
+        if(!concepto) {
+            alert('Ingresa el concepto del gasto');
+            conceptoInput.focus();
+            return;
+        }
+        if(isNaN(monto) || monto <= 0) {
+            alert('Ingresa un monto válido');
+            montoInput.focus();
+            return;
+        }
         
-        costosOperativos.push({
+        const nuevoGasto = {
             id: Date.now(),
             concepto: concepto,
             monto: monto,
             fecha: diaActual
-        });
+        };
         
-        document.getElementById('conceptoCosto').value = '';
-        document.getElementById('montoCosto').value = '';
+        gastosOperativos.push(nuevoGasto);
+        console.log('💰 Gasto agregado:', nuevoGasto);
+        console.log('Total gastos hoy:', gastosOperativos.filter(g => g.fecha === diaActual));
+        
+        conceptoInput.value = '';
+        montoInput.value = '';
+        
         sync();
         render();
+        
+        alert(`Gasto registrado: Bs. ${fM(monto)}`);
     }
     
-    function eliminarCostoOperativo(id) {
-        costosOperativos = costosOperativos.filter(c => c.id !== id);
-        sync();
-        render();
+    function eliminarGastoOperativo(id) {
+        const gasto = gastosOperativos.find(g => g.id === id);
+        if(confirm(`¿Eliminar gasto: ${gasto.concepto} (Bs. ${fM(gasto.monto)})? `)) {
+            gastosOperativos = gastosOperativos.filter(c => c.id !== id);
+            console.log('💰 Gasto eliminado. Total:', gastosOperativos.filter(g => g.fecha === diaActual));
+            sync();
+            render();
+        }
     }
 
     function cerrarDia() {
@@ -1708,7 +1735,7 @@
             vHoy.forEach(v => { ing += v.total; gan += v.ganancia; iva += (v.ivaMonto || 0); });
             
             // Sumar costos operativos del día
-            const costosHoy = costosOperativos.filter(c => c.fecha === diaActual);
+            const costosHoy = gastosOperativos.filter(c => c.fecha === diaActual);
             costosHoy.forEach(c => { costos += c.monto; });
             
             const gananciaNeta = gan - costos;
@@ -1718,13 +1745,13 @@
                 ingresos: ing, 
                 iva: iva, 
                 ganancia: gan,
-                costosOperativos: costos,
+                gastosOperativos: costos,
                 gananciaNeta: gananciaNeta,
                 tipo: 'DIARIO' 
             });
             
             ventas = ventas.filter(v => v.dia !== diaActual);
-            costosOperativos = costosOperativos.filter(c => c.fecha !== diaActual);
+            gastosOperativos = gastosOperativos.filter(c => c.fecha !== diaActual);
             sync(); 
             render(); 
             alert(`Caja cerrada.\nGanancia Bruta: Bs. ${fM(gan)}\nCostos: Bs. ${fM(costos)}\nGanancia Neta: Bs. ${fM(gananciaNeta)}`);
@@ -1739,7 +1766,7 @@
                 ing += c.ingresos; 
                 gan += c.ganancia; 
                 iva += (c.iva || 0);
-                costos += (c.costosOperativos || 0);
+                costos += (c.gastosOperativos || 0);
                 gananciaNeta += (c.gananciaNeta || c.ganancia);
             });
             const mesAnio = diaActual.split('/')[1] + '/' + diaActual.split('/')[2];
@@ -1749,13 +1776,13 @@
                 ingresos: ing, 
                 iva: iva, 
                 ganancia: gan,
-                costosOperativos: costos,
+                gastosOperativos: costos,
                 gananciaNeta: gananciaNeta,
                 tipo: 'MENSUAL' 
             });
             sync(); 
             render(); 
-            alert(`Cierre Mensual Completado\nIngresos: Bs. ${fM(ing)}\nGanancia Bruta: Bs. ${fM(gan)}\nCostos Operativos: Bs. ${fM(costos)}\nGanancia Neta: Bs. ${fM(gananciaNeta)}`);
+            alert(`Cierre Mensual Completado\nIngresos: Bs. ${fM(ing)}\nGanancia Bruta: Bs. ${fM(gan)}\nGastos Operativos: Bs. ${fM(costos)}\nGanancia Neta: Bs. ${fM(gananciaNeta)}`);
         }
     }
 
