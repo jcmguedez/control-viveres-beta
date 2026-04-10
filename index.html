@@ -419,23 +419,20 @@
         </div>
         <div class="input-group">
             <label>Nombre del Producto</label>
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="productoFactura" placeholder="Selecciona un producto..." readonly onclick="abrirModalBusquedaFactura()" style="background:#f9f9f9; cursor:pointer;">
-                <button class="btn-info" onclick="abrirModalBusquedaFactura()" style="padding:10px;">🔍</button>
-            </div>
+            <input type="text" id="productoFactura" placeholder="Busca producto..." oninput="buscarProductoFactura()" autocomplete="off">
+            <div id="searchResultsFactura" class="search-results"></div>
             <small id="productoSugerencia" style="color: #27ae60; display: none; margin-top: 5px;">✓ Producto seleccionado</small>
         </div>
         <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px; align-items: flex-end;">
             <div style="flex:2;">
                 <label>Costo de Compra (por Unidad/Kg)</label>
                 <div style="display:flex; gap:5px;">
-                    <input type="number" id="costoUnitarioFactura" placeholder="0.00" step="0.01" oninput="calcularCostoDualFactura()">
-                    <select id="monedaCostoFactura" style="width:70px; padding:10px;" onchange="calcularCostoDualFactura()">
+                    <input type="number" id="costoUnitarioFactura" placeholder="0.00" step="0.01">
+                    <select id="monedaCostoFactura" style="width:70px; padding:10px;">
                         <option value="BS" selected>Bs</option>
                         <option value="USD">$</option>
                     </select>
                 </div>
-                <div id="costoDualFactura" class="costo-preview">Eqv: $ 0,00</div>
             </div>
             <div style="flex:1;">
                 <label>Cantidad</label>
@@ -576,11 +573,11 @@
 <div id="modalCredito" class="modal">
     <div class="modal-content">
         <h3>💳 Registrar Crédito</h3>
-<!-- MODAL CRÉDITO -->
-<div id="modalCredito" class="modal">
-    <div class="modal-content">
-        <h3>💳 Registrar Crédito</h3>
-        <div class="input-group"><label>Nombre del Cliente:</label><input type="text" id="nombreCliente" placeholder="Ej: Juan Perez"></div>
+        <div class="input-group">
+            <label>Nombre del Cliente:</label>
+            <input type="text" id="nombreCliente" placeholder="Ej: Juan Perez" list="listaClientesSugeridos">
+            <datalist id="listaClientesSugeridos"></datalist>
+        </div>
         <div class="stats-box">
             <div class="stats-label">Monto a Deber:</div>
             <div class="stats-value" id="montoCredito">Bs. 0,00</div>
@@ -589,15 +586,7 @@
     </div>
 </div>
 
-<!-- MODAL BÚSQUEDA PRODUCTOS PROVEEDORES -->
-<div id="modalBusquedaFactura" class="modal">
-    <div class="modal-content">
-        <h3>🔍 Buscar Producto</h3>
-        <input type="text" id="inputBusquedaFactura" class="search-input" placeholder="Escribe nombre o código..." oninput="buscarProductoFacturaModal()">
-        <div id="resultadosBusquedaFactura" class="search-results" style="max-height: 300px;"></div>
-        <button class="btn-danger" onclick="cerrarModalBusquedaFactura()" style="width:100%; margin-top:10px;">CERRAR</button>
-    </div>
-</div>script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js"></script>
@@ -815,13 +804,6 @@
         const val = parseFloat(document.getElementById('costo').value) || 0;
         const mon = document.getElementById('monedaCosto').value;
         document.getElementById('costoDual').textContent = mon === 'USD' ? `Eqv: Bs. ${fM(val * tasaDolar)}` : `Eqv: $ ${fM(val / tasaDolar)}`;
-    }
-
-    function calcularCostoDualFactura() {
-        const val = parseFloat(document.getElementById('costoUnitarioFactura').value) || 0;
-        const mon = document.getElementById('monedaCostoFactura').value;
-        document.getElementById('costoDualFactura').textContent = mon === 'USD' ? `Eqv: Bs. ${fM(val * tasaDolar)}` : `Eqv: $ ${fM(val / tasaDolar)}`;
-        calcularTotalFactura();
     }
 
     // ============ FUNCIONES DE ESCANEO DE CÁMARA ============
@@ -1423,6 +1405,12 @@
         renderCarrito();
         renderProveedores();
         
+        // Actualizar totales diarios considerando gastos
+        const costosDelDiaActual = gastosOperativos.filter(c => c.fecha === diaActual).reduce((sum, c) => sum + c.monto, 0);
+        if(costosDelDiaActual > 0) {
+            const stats = document.querySelector('.stats-box:nth-of-type(3)');
+            if(stats) stats.title = `Ganancia Neta = Ganancia Bruta (Bs. ${fM(gan)}) - Gastos (Bs. ${fM(costosDelDiaActual)})`;
+        }
         const vHoy = ventas.filter(v => v.dia === diaActual);
         let ing = 0, gan = 0, ivaRec = 0;
         vHoy.forEach(v => { 
@@ -1432,13 +1420,6 @@
                 ivaRec += (v.ivaMonto || 0);
             } 
         });
-
-        // Actualizar totales diarios considerando gastos
-        const costosDelDiaActual = gastosOperativos.filter(c => c.fecha === diaActual).reduce((sum, c) => sum + c.monto, 0);
-        if(costosDelDiaActual > 0) {
-            const stats = document.querySelector('.stats-box:nth-of-type(3)');
-            if(stats) stats.title = `Ganancia Neta = Ganancia Bruta (Bs. ${fM(gan)}) - Gastos (Bs. ${fM(costosDelDiaActual)})`;
-        }
         document.getElementById('ingresosTotales').textContent = 'Bs. ' + fM(ing);
         document.getElementById('ivaRecaudado').textContent = 'Bs. ' + fM(ivaRec);
         // Calcular ganancia neta considerando gastos del día
@@ -1885,24 +1866,11 @@
         });
     }
     
-
-
-    function abrirModalBusquedaFactura() {
-        document.getElementById('modalBusquedaFactura').classList.add('active');
-        document.getElementById('inputBusquedaFactura').value = '';
-        document.getElementById('resultadosBusquedaFactura').innerHTML = '';
-        setTimeout(() => document.getElementById('inputBusquedaFactura').focus(), 300);
-    }
-
-    function cerrarModalBusquedaFactura() {
-        document.getElementById('modalBusquedaFactura').classList.remove('active');
-    }
-
-    function buscarProductoFacturaModal() {
-        const q = document.getElementById('inputBusquedaFactura').value.toLowerCase();
-        const res = document.getElementById('resultadosBusquedaFactura');
+    function buscarProductoFactura() {
+        const q = document.getElementById('productoFactura').value.toLowerCase();
+        const res = document.getElementById('searchResultsFactura');
         if(!q) return res.innerHTML = '';
-        res.innerHTML = items.filter(i => i.nombre.toLowerCase().includes(q) || (i.codigoBarras && i.codigoBarras.includes(q))).map(i => `
+        res.innerHTML = items.filter(i => i.nombre.toLowerCase().includes(q)).map(i => `
             <div class="search-result-item" onclick="seleccionarProductoFactura(${i.id})">
                 <div>
                     <b>${i.nombre}</b> ${i.codigoBarras ? '<small>['+i.codigoBarras+']</small>' : ''}<br>
@@ -1918,12 +1886,11 @@
         if(!i) return;
         document.getElementById('productoFactura').value = i.nombre;
         document.getElementById('skuFactura').value = i.codigoBarras || '';
-        // Cargar el costo original en dólares y configurar el selector
-        document.getElementById('costoUnitarioFactura').value = i.costo.toFixed(2);
-        document.getElementById('monedaCostoFactura').value = 'USD';
+        document.getElementById('costoUnitarioFactura').value = (i.costo * tasaDolar).toFixed(2);
+        document.getElementById('monedaCostoFactura').value = 'BS';
+        document.getElementById('searchResultsFactura').innerHTML = '';
         document.getElementById('productoSugerencia').style.display = 'block';
-        cerrarModalBusquedaFactura();
-        calcularCostoDualFactura();
+        document.getElementById('cantidadFactura').focus();
     }
 
     function anadirProductoFactura() {
@@ -1958,7 +1925,7 @@
         const productoExistente = items.find(i => (sku && i.codigoBarras === sku) || i.nombre.toLowerCase() === producto.toLowerCase());
         const unidad = productoExistente ? (productoExistente.unidad || 'UND') : 'UND';
 
-        const subtotal = moneda === 'BS' ? (costoUnitario * cantidad) : (costoUnitario * tasaDolar * cantidad);
+        const subtotal = costoBS * cantidad;
         const ivaAmount = aplicarIva ? subtotal * (ivaPorcentaje / 100) : 0;
         const total = subtotal + ivaAmount;
         
