@@ -1429,12 +1429,18 @@
         document.getElementById('gananciaEstimada').textContent = 'Bs. ' + fM(gananciaNeta);
         document.getElementById('gananciaEstimada').title = `Ganancia Bruta: Bs. ${fM(gan)} - Gastos: Bs. ${fM(costosDelDia)}`;
         
-        document.getElementById('ventasHistorial').innerHTML = vHoy.reverse().map(v => `
-            <div class="item ${v.anulada ? 'anulada' : ''}">
-                <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)} ${v.ivaMonto > 0 ? '(Inc. IVA)' : ''} (${v.hora})
-                <small style="color:var(--primary); font-weight:bold;">Ganancia: Bs. ${fM(v.ganancia)}</small>
-                ${!v.anulada ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : '<b>[ANULADA]</b>'}
-            </div>`).join('');
+        const ventasHistorialElement = document.getElementById('ventasHistorial');
+        if(ventasHistorialElement) {
+            console.log('Renderizando ventas del día:', vHoy);
+            ventasHistorialElement.innerHTML = vHoy.length > 0 ? vHoy.reverse().map(v => `
+                <div class="item ${v.anulada ? 'anulada' : ''}">
+                    <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)} ${v.ivaMonto > 0 ? '(Inc. IVA)' : ''} (${v.hora})
+                    <small style="color:var(--primary); font-weight:bold;">Ganancia: Bs. ${fM(v.ganancia)}</small>
+                    ${!v.anulada ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : '<b>[ANULADA]</b>'}
+                </div>`).join('') : '<p style="text-align:center; color:#999; padding:20px;">Sin ventas registradas hoy</p>';
+        } else {
+            console.error('❌ Elemento ventasHistorial no encontrado');
+        }
         // Agrupar créditos por cliente
         const creditosAgrupados = {};
         creditos.forEach((c, idx) => {
@@ -1654,7 +1660,13 @@
         
         carrito = []; 
         document.getElementById('nombreCliente').value = '';
+        document.getElementById('busquedaProducto').value = '';
+        document.getElementById('searchResults').innerHTML = '';
         cerrarModalCredito(); 
+        
+        console.log('✅ Venta registrada:', { producto: det.slice(0,-2), total: totalV, ganancia: ganV, dia: diaActual });
+        console.log('Total ventas hoy:', ventas.filter(v => v.dia === diaActual && !v.anulada).length);
+        
         sync(); 
         render(); 
         alert('Venta guardada con éxito');
