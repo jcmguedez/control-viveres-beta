@@ -9,8 +9,8 @@
     <meta name="apple-mobile-web-app-title" content="Control Víveres">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <link rel="icon" type="image/png" href="icon.png">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="iconpremiun.png">
+    <link rel="apple-touch-icon" href="iconpremiun.png">
     
     <title>Control de Víveres - Pro Contable v2</title>
     <style>
@@ -700,7 +700,7 @@
                 let ing = 0, gan = 0, iva = 0, costos = 0;
                 vDia.forEach(v => { ing += v.total; gan += v.ganancia; iva += (v.ivaMonto || 0); });
                 
-                const costosDelDia = gastrosOperativos.filter(c => c.fecha === dia);
+                const costosDelDia = gastosOperativos.filter(c => c.fecha === dia);
                 costosDelDia.forEach(c => { costos += c.monto; });
                 
                 const gananciaNeta = gan - costos;
@@ -720,10 +720,10 @@
             }
         });
         
-        // Limpiar ventas de esos días
+        // Limpiar ventas y gastos de esos días
         dias.forEach(dia => {
             ventas = ventas.filter(v => v.dia !== dia);
-            gastrosOperativos = gastrosOperativos.filter(c => c.fecha !== dia);
+            gastosOperativos = gastosOperativos.filter(c => c.fecha !== dia);
         });
         
         sync();
@@ -1899,7 +1899,7 @@
             vHoy.forEach(v => { ing += v.total; gan += v.ganancia; iva += (v.ivaMonto || 0); });
             
             // Sumar costos operativos del día
-            const costosHoy = gastrosOperativos.filter(c => c.fecha === diaHoyParaCierre);
+            const costosHoy = gastosOperativos.filter(c => c.fecha === diaHoyParaCierre);
             costosHoy.forEach(c => { costos += c.monto; });
             
             const gananciaNeta = gan - costos;
@@ -1914,7 +1914,7 @@
             });
             
             ventas = ventas.filter(v => v.dia !== diaHoyParaCierre);
-            gastrosOperativos = gastrosOperativos.filter(c => c.fecha !== diaHoyParaCierre);
+            gastosOperativos = gastosOperativos.filter(c => c.fecha !== diaHoyParaCierre);
             sync(); 
             render(); 
             alert(`Caja cerrada.\nGanancia Bruta: Bs. ${fM(gan)}\nCostos: Bs. ${fM(costos)}\nGanancia Neta: Bs. ${fM(gananciaNeta)}`);
