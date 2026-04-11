@@ -1488,11 +1488,6 @@
         renderProveedores();
         
         // Actualizar totales diarios considerando gastos
-        const costosDelDiaActual = gastosOperativos.filter(c => c.fecha === diaHoy).reduce((sum, c) => sum + c.monto, 0);
-        if(costosDelDiaActual > 0) {
-            const stats = document.querySelector('.stats-box:nth-of-type(3)');
-            if(stats) stats.title = `Ganancia Neta = Ganancia Bruta (Bs. ${fM(gan)}) - Gastos (Bs. ${fM(costosDelDiaActual)})`;
-        }
         // Filtrar ventas del día actual (actualizado dinámicamente)
         const diaHoy = new Date().toLocaleDateString('es-ES');
         console.log('🔍 Filtrando ventas para el día:', diaHoy, '- Total ventas en sistema:', ventas.length);
@@ -1508,11 +1503,17 @@
         });
         document.getElementById('ingresosTotales').textContent = 'Bs. ' + fM(ing);
         document.getElementById('ivaRecaudado').textContent = 'Bs. ' + fM(ivaRec);
-        // Calcular ganancia neta considerando gastos del día        const costosDelDia = gastrosOperativos.filter(c => c.fecha === diaHoy).reduce((sum, c) => sum + c.monto, 0);
+        // Calcular ganancia neta considerando gastos del día
+        const costosDelDia = gastosOperativos.filter(c => c.fecha === diaHoy).reduce((sum, c) => sum + c.monto, 0);
         console.log('💰 Gastos del día (' + diaHoy + ') para ganancia neta:', costosDelDia);
         const gananciaNeta = gan - costosDelDia;
         document.getElementById('gananciaEstimada').textContent = 'Bs. ' + fM(gananciaNeta);
         document.getElementById('gananciaEstimada').title = `Ganancia Bruta: Bs. ${fM(gan)} - Gastos: Bs. ${fM(costosDelDia)}`;
+        const costosDelDiaActual = costosDelDia;
+        if(costosDelDiaActual > 0) {
+            const stats = document.querySelector('.stats-box:nth-of-type(3)');
+            if(stats) stats.title = `Ganancia Neta = Ganancia Bruta (Bs. ${fM(gan)}) - Gastos (Bs. ${fM(costosDelDiaActual)})`;
+        }
         
         const ventasHistorialElement = document.getElementById('ventasHistorial');
         if(ventasHistorialElement) {
