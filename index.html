@@ -575,19 +575,27 @@
 
 <!-- MODAL CRÉDITO -->
 <div id="modalCredito" class="modal">
-    <div class="modal-content">
-        <h3>💳 Registrar Crédito</h3>
-        <div class="input-group">
-            <label>Nombre del Cliente:</label>
-            <input type="text" id="nombreCliente" placeholder="Ej: Juan Perez" list="listaClientesSugeridos">
-            <datalist id="listaClientesSugeridos"></datalist>
+        <div class="modal-content">
+            <h3>💳 Registrar Crédito</h3>
+            <div class="input-group">
+                <label>Cédula del Cliente:</label>
+                <input type="text" id="cedulaCliente" placeholder="V-12345678" list="listaClientesSugeridos" onchange="buscarClientePorCedula(this.value)">
+                <datalist id="listaClientesSugeridos"></datalist>
+            </div>
+            <div class="input-group">
+                <label>Nombre Completo:</label>
+                <input type="text" id="nombreCliente" placeholder="Ej: Juan Perez">
+            </div>
+            <div class="input-group">
+                <label>Teléfono:</label>
+                <input type="tel" id="telefonoCliente" placeholder="0412-1234567">
+            </div>
+            <div class="stats-box">
+                <div class="stats-label">Monto a Deber:</div>
+                <div class="stats-value" id="montoCredito">Bs. 0,00</div>
+            </div>
+            <div class="btn-grid"><button class="btn-add" onclick="finalizarVenta(true)">CONFIRMAR</button><button class="btn-danger" onclick="cerrarModalCredito()">CANCELAR</button></div>
         </div>
-        <div class="stats-box">
-            <div class="stats-label">Monto a Deber:</div>
-            <div class="stats-value" id="montoCredito">Bs. 0,00</div>
-        </div>
-        <div class="btn-grid"><button class="btn-add" onclick="finalizarVenta(true)">CONFIRMAR</button><button class="btn-danger" onclick="cerrarModalCredito()">CANCELAR</button></div>
-    </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
@@ -1497,11 +1505,10 @@
         renderProveedores();
         
         // Actualizar totales diarios considerando gastos
-        // Filtrar ventas del día actual (actualizado dinámicamente)
         const diaHoy = new Date().toLocaleDateString('es-ES');
-        console.log('🔍 Filtrando ventas para el día:', diaHoy, '- Total ventas en sistema:', ventas.length);
         const vHoy = ventas.filter(v => v.dia === diaHoy);
-        console.log('✅ Ventas encontradas para hoy:', vHoy.length);
+        const vPendientes = ventas.filter(v => v.dia !== diaHoy);
+        
         let ing = 0, gan = 0, ivaRec = 0;
         vHoy.forEach(v => { 
             if(!v.anulada) { 
@@ -1512,65 +1519,64 @@
         });
         document.getElementById('ingresosTotales').textContent = 'Bs. ' + fM(ing);
         document.getElementById('ivaRecaudado').textContent = 'Bs. ' + fM(ivaRec);
-        // Calcular ganancia neta considerando gastos del día
         const costosDelDia = gastosOperativos.filter(c => c.fecha === diaHoy).reduce((sum, c) => sum + c.monto, 0);
-        console.log('💰 Gastos del día (' + diaHoy + ') para ganancia neta:', costosDelDia);
         const gananciaNeta = gan - costosDelDia;
         document.getElementById('gananciaEstimada').textContent = 'Bs. ' + fM(gananciaNeta);
-        document.getElementById('gananciaEstimada').title = `Ganancia Bruta: Bs. ${fM(gan)} - Gastos: Bs. ${fM(costosDelDia)}`;
-        const costosDelDiaActual = costosDelDia;
-        if(costosDelDiaActual > 0) {
-            const stats = document.querySelector('.stats-box:nth-of-type(3)');
-            if(stats) stats.title = `Ganancia Neta = Ganancia Bruta (Bs. ${fM(gan)}) - Gastos (Bs. ${fM(costosDelDiaActual)})`;
-        }
         
         const ventasHistorialElement = document.getElementById('ventasHistorial');
         if(ventasHistorialElement) {
-            console.log('📊 Renderizando ventas del día (' + diaHoy + '):', vHoy.length, 'ventas');
-            if(vHoy.length > 0) {
-                ventasHistorialElement.innerHTML = vHoy.reverse().map(v => `
-                    <div class="item ${v.anulada ? 'anulada' : ''}">
-                        <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)} ${v.ivaMonto > 0 ? '(Inc. IVA)' : ''} (${v.hora})
-                        <small style="color:var(--primary); font-weight:bold;">Ganancia: Bs. ${fM(v.ganancia)}</small>
-                        ${!v.anulada ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : '<b>[ANULADA]</b>'}
-                    </div>`).join('');
-            } else {
-                ventasHistorialElement.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Sin ventas registradas hoy</p>';
-            }
+            const htmlVHoy = vHoy.length > 0 ? vHoy.slice().reverse().map(v => `
+                <div class="item ${v.anulada ? 'anulada' : ''}">
+                    <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)} (${v.hora})
+                    <small style="color:var(--primary); font-weight:bold;">Ganancia: Bs. ${fM(v.ganancia)}</small>
+                    ${!v.anulada ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : '<b>[ANULADA]</b>'}
+                </div>`).join('') : '<p style="text-align:center; color:#999;">Sin ventas hoy</p>';
+
+            const htmlVPendientes = vPendientes.length > 0 ? `
+                <div style="background:#fff3cd; padding:10px; border-radius:10px; margin-bottom:15px; border:1px solid #ffeeba;">
+                    <h3 style="margin:0 0 10px 0; font-size:0.9rem; color:#856404;">⚠️ VENTAS PENDIENTES DE CIERRE</h3>
+                    ${vPendientes.slice().reverse().map(v => `
+                        <div class="item ${v.anulada ? 'anulada' : ''}" style="background:white; margin-bottom:5px; border-left-color:#ffc107;">
+                            <small>${v.dia}</small> <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)}
+                            ${!v.anulada ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : ''}
+                        </div>`).join('')}
+                    <button class="btn-vender" onclick="cerrarDia()" style="width:100%; margin-top:5px; background:#ffc107; color:#000;">CERRAR DÍAS PENDIENTES</button>
+                </div>` : '';
+
+            ventasHistorialElement.innerHTML = htmlVPendientes + htmlVHoy;
         } else {
             console.error('❌ Elemento ventasHistorial no encontrado');
         }
-        // Agrupar créditos por cliente
-        const creditosAgrupados = {};
-        creditos.forEach((c, idx) => {
-            if(!creditosAgrupados[c.cliente]) {
-                creditosAgrupados[c.cliente] = { total: 0, items: [] };
-            }
-            creditosAgrupados[c.cliente].total += c.monto;
-            creditosAgrupados[c.cliente].items.push({ ...c, originalIdx: idx });
+        const agrupados = {};
+        creditos.forEach((cr, idx) => {
+            const key = cr.cedula || cr.cliente;
+            if(!agrupados[key]) agrupados[key] = { nombre: cr.cliente, cedula: cr.cedula, total: 0, items: [] };
+            agrupados[key].total += cr.monto;
+            agrupados[key].items.push({ ...cr, idx });
         });
 
         let htmlCreditos = "";
-        for(const cliente in creditosAgrupados) {
-            const grupo = creditosAgrupados[cliente];
-            const detallesHtml = grupo.items.map(it => `
-                <div style="font-size:0.75rem; border-top:1px solid #eee; padding:5px 0; display:flex; justify-content:space-between; align-items:center;">
-                    <span>${it.fecha}: ${it.detalle} (Bs. ${fM(it.monto)})</span>
-                    <button onclick="pagarCredito(${it.originalIdx})" style="background:var(--primary); color:white; border:none; padding:2px 5px; border-radius:3px; font-size:0.6rem; cursor:pointer;">PAGAR</button>
-                </div>
-            `).join('');
-
-            htmlCreditos += `
-                <div class="item" style="border-left-color: var(--danger);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <b style="font-size:1rem;">${cliente}</b>
-                        <span style="color:var(--danger); font-weight:bold; font-size:1.1rem;">Bs. ${fM(grupo.total)}</span>
+        for(let k in agrupados) {
+            const g = agrupados[k];
+            const cli = clientes.find(c => c.cedula === g.cedula);
+            htmlCreditos += `<div class="item" style="border-left-color:var(--danger);">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <b style="font-size:1rem;">${g.nombre}</b> ${g.cedula ? '<br><small>V-'+g.cedula+'</small>' : ''}
+                        ${cli && cli.telefono ? '<br><small>📞 '+cli.telefono+'</small>' : ''}
                     </div>
-                    <div style="background:#fff; border-radius:5px; padding:5px;">
-                        ${detallesHtml}
+                    <div style="text-align:right;">
+                        <span style="color:var(--danger); font-weight:bold; font-size:1.1rem;">Bs. ${fM(g.total)}</span>
+                        ${g.cedula ? `<br><button onclick="eliminarCliente('${g.cedula}')" style="background:none; color:var(--danger); border:none; padding:0; font-size:0.65rem; cursor:pointer;">Eliminar Cliente</button>` : ''}
                     </div>
                 </div>
-            `;
+                <div style="margin-top:10px; background:#fff; border-radius:5px; padding:5px;">
+                    ${g.items.map(it => `<div style="font-size:0.75rem; border-bottom:1px solid #eee; padding:5px 0; display:flex; justify-content:space-between; align-items:center;">
+                        <span>${it.fecha}: ${it.detalle} (Bs. ${fM(it.monto)})</span>
+                        <button onclick="pagarCredito(${it.idx})" style="background:var(--primary); color:white; border:none; padding:2px 5px; border-radius:3px; font-size:0.6rem; cursor:pointer;">PAGAR</button>
+                    </div>`).join('')}
+                </div>
+            </div>`;
         }
         document.getElementById('listaCreditos').innerHTML = htmlCreditos || '<p style="text-align:center; color:#999; padding:20px;">Sin deudas pendientes</p>';
         // Renderizar gastos operativos del día
@@ -1727,8 +1733,18 @@
     function finalizarVenta(esCredito) {
         if(!carrito.length) return alert('Carrito vacío');
         
-        console.log('💳 Finalizando venta - Tipo:', esCredito ? 'Crédito' : 'Contado', '- Productos:', carrito.length);
-        
+        let clienteNombre = "", clienteCedula = "", clienteTelefono = "";
+        if(esCredito) {
+            clienteNombre = document.getElementById('nombreCliente').value.trim();
+            clienteCedula = document.getElementById('cedulaCliente').value.trim();
+            clienteTelefono = document.getElementById('telefonoCliente').value.trim();
+            if(!clienteNombre || !clienteCedula) return alert('Nombre y Cédula son obligatorios');
+            
+            const idx = clientes.findIndex(c => c.cedula === clienteCedula);
+            if(idx === -1) clientes.push({ id: Date.now(), nombre: clienteNombre, cedula: clienteCedula, telefono: clienteTelefono });
+            else { clientes[idx].nombre = clienteNombre; clientes[idx].telefono = clienteTelefono; }
+        }
+
         let subGravV = 0, subExentoV = 0, ganV = 0, det = "";
         const conIVA = document.getElementById('aplicarIVA').checked;
         
@@ -1743,17 +1759,6 @@
         const totalV = subGravV + subExentoV + ivaMonto;
 
         if(totalV <= 0) return alert('El monto de la venta debe ser mayor a 0');
-
-        let clienteNombre = "";
-        if(esCredito) {
-            clienteNombre = document.getElementById('nombreCliente').value.trim();
-            if(!clienteNombre) return alert('Escribe el nombre del cliente');
-            
-            // Guardar en maestro de clientes si no existe
-            if(!clientes.find(c => c.nombre.toLowerCase() === clienteNombre.toLowerCase())) {
-                clientes.push({ nombre: clienteNombre, id: Date.now() });
-            }
-        }
 
         // Descontar stock solo al confirmar éxito
         carrito.forEach(c => {
@@ -1783,22 +1788,21 @@
             creditos.push({ 
                 id: Date.now(),
                 cliente: clienteNombre, 
+                cedula: clienteCedula,
                 monto: totalV, 
                 detalle: det.slice(0,-2), 
                 fecha: diaParaGuardar,
                 pagado: false
             });
-            console.log('💳 Crédito registrado para:', clienteNombre, '- Monto: Bs.', totalV, '- Día:', diaParaGuardar);
         }
         
         carrito = []; 
         document.getElementById('nombreCliente').value = '';
+        document.getElementById('cedulaCliente').value = '';
+        document.getElementById('telefonoCliente').value = '';
         document.getElementById('busquedaProducto').value = '';
         document.getElementById('searchResults').innerHTML = '';
         cerrarModalCredito(); 
-        
-        console.log('✅ Venta registrada:', { producto: det.slice(0,-2), total: totalV, ganancia: ganV, dia: diaActual });
-        console.log('Total ventas hoy:', ventas.filter(v => v.dia === diaActual && !v.anulada).length);
         
         sync(); 
         render(); 
@@ -1948,15 +1952,29 @@
     function abrirModalCredito() { 
         if(!carrito.length) return alert('Carrito vacío');
         
-        // Cargar sugerencias de clientes
         const datalist = document.getElementById('listaClientesSugeridos');
         if(datalist) {
-            datalist.innerHTML = clientes.map(c => `<option value="${c.nombre}">`).join('');
+            datalist.innerHTML = clientes.map(c => `<option value="${c.cedula}">${c.nombre}</option>`).join('');
         }
         
         document.getElementById('montoCredito').textContent = document.getElementById('totalCarrito').textContent; 
         document.getElementById('modalCredito').classList.add('active'); 
-        document.getElementById('nombreCliente').focus();
+        document.getElementById('cedulaCliente').focus();
+    }
+    
+    function buscarClientePorCedula(cedula) {
+        const c = clientes.find(x => x.cedula === cedula);
+        if(c) {
+            document.getElementById('nombreCliente').value = c.nombre;
+            document.getElementById('telefonoCliente').value = c.telefono || '';
+        }
+    }
+
+    function eliminarCliente(cedula) {
+        if(confirm('¿Eliminar cliente y sus datos de contacto? (No elimina deudas existentes)')) {
+            clientes = clientes.filter(c => c.cedula !== cedula);
+            sync(); render();
+        }
     }
     function cerrarModalCredito() { document.getElementById('modalCredito').classList.remove('active'); }
     function pagarCredito(idx) { if(confirm('¿Pagado?')) { creditos.splice(idx,1); sync(); render(); } }
