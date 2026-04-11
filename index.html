@@ -296,8 +296,12 @@
     <div id="ventas" class="tab-content">
         <!-- BÚSQUEDA CON ESCANEO DE CÁMARA -->
         <div class="camera-container">
-            <input type="text" id="busquedaProducto" class="search-input" placeholder="🔍 Buscar producto o escanear código..." oninput="buscarVenta()" style="margin-bottom: 0;">
+            <input type="text" id="busquedaProducto" class="search-input" placeholder="🔍 Buscar por nombre..." oninput="buscarVenta()" style="margin-bottom: 0;">
             <button class="btn-camera" onclick="toggleCameraVentas()">📷 ESCANEAR</button>
+        </div>
+        <div class="input-group" style="margin-top: 10px;">
+            <label>Código de Barras (Escáner)</label>
+            <input type="text" id="codigoBarrasVenta" class="search-input" placeholder="Escanear o escribir código de barras..." onkeypress="if(event.key === 'Enter') buscarVentaPorCodigo(this.value)">
         </div>
         <div id="qr-reader-ventas" style="display:none; margin-top:10px;"></div>
         <div class="qr-reader-status" id="qr-status-ventas"></div>
@@ -1301,12 +1305,13 @@
     }
 
     function onScanSuccessVentas(decodedText) {
-        // NO escribir en la casilla de búsqueda, procesar directamente el código
+        // Poner el código en la casilla específica
+        document.getElementById('codigoBarrasVenta').value = decodedText;
         document.getElementById('qr-status-ventas').textContent = '✓ Código detectado: ' + decodedText;
         
         console.log('📱 Escáner activado - Código:', decodedText);
         
-        // Buscar por SKU (prioridad) o por nombre
+        // Buscar por SKU y añadir directamente
         buscarVentaPorCodigo(decodedText);
         
         // Cerrar cámara automáticamente después de detectar
@@ -1318,23 +1323,27 @@
     }
 
     function buscarVentaPorCodigo(codigo) {
-        // Búsqueda prioritaria: si es numérico de 7-13 dígitos, buscar por codigoBarras
-        if(/^\d{7,13}$/.test(codigo)) {
-            const producto = items.find(i => i.codigoBarras === codigo && i.cantidad > 0);
-            if(producto) {
+        if(!codigo) return;
+        
+        // Buscar el producto por código de barras
+        const producto = items.find(i => i.codigoBarras === codigo);
+        
+        if(producto) {
+            if(producto.cantidad > 0) {
                 console.log('✅ Producto encontrado por código:', producto.nombre);
                 prepararAddCarrito(producto.id);
-                return;
+                // Limpiar la casilla después de añadir con éxito
+                document.getElementById('codigoBarrasVenta').value = '';
             } else {
-                console.warn('⚠️ Código de barras no encontrado o sin stock:', codigo);
-                alert('Producto no encontrado o sin stock disponible');
-                return;
+                console.warn('❌ Producto agotado:', producto.nombre);
+                alert('⚠️ El producto "' + producto.nombre + '" está AGOTADO.');
             }
+        } else {
+            // Si no se encuentra por código de barras, avisar y NO pasar a búsqueda por nombre automáticamente
+            // para evitar confusiones en la casilla de búsqueda textual.
+            console.warn('⚠️ Código de barras no registrado:', codigo);
+            alert('El código "' + codigo + '" no coincide con ningún producto registrado.');
         }
-        // Si el código no es válido de barras, intentar búsqueda por nombre
-        console.log('ℹ️ Código no es de barras válido, intentando búsqueda por nombre...');
-        document.getElementById('busquedaProducto').value = codigo;
-        buscarVenta();
     }
 
     function addItem() {
