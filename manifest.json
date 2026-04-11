@@ -1,0 +1,23 @@
+{
+  "name": "Control de Víveres - Pro Contable",
+  "short_name": "Víveres Pro",
+  "description": "Sistema avanzado de control de inventario y ventas",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#27ae60",
+  "icons": [
+    {
+      "src": "iconpremiun.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "iconpremiun.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
