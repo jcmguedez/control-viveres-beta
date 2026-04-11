@@ -652,6 +652,72 @@
     let items = [], ventas = [], creditos = [], carrito = [], cierres = [], proveedores = [], facturas = [], clientes = [], gastosOperativos = [];
     let carritoFacturaTemp = []; // Carrito temporal para productos de factura actual
     let tasaDolar = 36.50, diaActual = new Date().toLocaleDateString('es-ES'), ivaPorcentaje = 16, stockMinimoGlobal = 5;
+    
+    // Función para actualizar la fecha actual cada vez que se renderiza
+    function actualizarDiaActual() {
+        const hoy = new Date().toLocaleDateString('es-ES');
+        if(hoy !== diaActual) {
+            console.log('📅 Cambio de día detectado:', diaActual, '->', hoy);
+            diaActual = hoy;
+            // Detectar ventas pendientes de cierre cuando cambia el día
+            detectarVentasPendientes();
+        }
+        return diaActual;
+    }
+    
+    // Función para detectar ventas de días anteriores sin cerrar
+    function detectarVentasPendientes() {
+        const hoy = new Date().toLocaleDateString('es-ES');
+        const ventasAnteriores = ventas.filter(v => v.dia !== hoy && !v.anulada);
+        const diasPendientes = [...new Set(ventasAnteriores.map(v => v.dia))];
+        
+        if(diasPendientes.length > 0) {
+            console.log('⚠️ ALERTA: Ventas pendientes de cierre de días anteriores:', diasPendientes);
+            const mensaje = `Se detectaron ventas sin cerrar de ${diasPendientes.length} día(s) anterior(es):\n${diasPendientes.join(', ')}\n\n¿Deseas proceder a cerrar esos días ahora?`;
+            if(confirm(mensaje)) {
+                cerrarDiasAnteriores(diasPendientes);
+            }
+        }
+    }
+    
+    // Función para cerrar múltiples días anteriores
+    function cerrarDiasAnteriores(dias) {
+        dias.forEach(dia => {
+            const vDia = ventas.filter(v => v.dia === dia && !v.anulada);
+            if(vDia.length > 0) {
+                let ing = 0, gan = 0, iva = 0, costos = 0;
+                vDia.forEach(v => { ing += v.total; gan += v.ganancia; iva += (v.ivaMonto || 0); });
+                
+                const costosDelDia = gastrosOperativos.filter(c => c.fecha === dia);
+                costosDelDia.forEach(c => { costos += c.monto; });
+                
+                const gananciaNeta = gan - costos;
+                
+                cierres.push({ 
+                    fecha: dia, 
+                    ingresos: ing, 
+                    iva: iva, 
+                    ganancia: gan,
+                    gastosOperativos: costos,
+                    gananciaNeta: gananciaNeta,
+                    tipo: 'DIARIO',
+                    cerradoAutomaticamente: true
+                });
+                
+                console.log('✅ Cierre automático registrado para', dia, '- Ganancia Neta: Bs.', fM(gananciaNeta));
+            }
+        });
+        
+        // Limpiar ventas de esos días
+        dias.forEach(dia => {
+            ventas = ventas.filter(v => v.dia !== dia);
+            gastrosOperativos = gastrosOperativos.filter(c => c.fecha !== dia);
+        });
+        
+        sync();
+        render();
+        alert('✅ Cierres retroactivos completados. Los datos han sido procesados correctamente.');
+    }
     let db = null, firebaseConnected = false, itemPendientePeso = null;
     let cameraInventarioActive = false, cameraVentasActive = false, cameraProveedoresActive = false;
     let html5QrcodeScanner = null;
@@ -1235,8 +1301,10 @@
     }
 
     function onScanSuccessVentas(decodedText) {
-        document.getElementById('busquedaProducto').value = decodedText;
+        // NO escribir en la casilla de búsqueda, procesar directamente el código
         document.getElementById('qr-status-ventas').textContent = '✓ Código detectado: ' + decodedText;
+        
+        console.log('📱 Escáner activado - Código:', decodedText);
         
         // Buscar por SKU (prioridad) o por nombre
         buscarVentaPorCodigo(decodedText);
@@ -1254,11 +1322,18 @@
         if(/^\d{7,13}$/.test(codigo)) {
             const producto = items.find(i => i.codigoBarras === codigo && i.cantidad > 0);
             if(producto) {
+                console.log('✅ Producto encontrado por código:', producto.nombre);
                 prepararAddCarrito(producto.id);
+                return;
+            } else {
+                console.warn('⚠️ Código de barras no encontrado o sin stock:', codigo);
+                alert('Producto no encontrado o sin stock disponible');
                 return;
             }
         }
-        // Si no encuentra por SKU, buscar por nombre
+        // Si el código no es válido de barras, intentar búsqueda por nombre
+        console.log('ℹ️ Código no es de barras válido, intentando búsqueda por nombre...');
+        document.getElementById('busquedaProducto').value = codigo;
         buscarVenta();
     }
 
@@ -1377,6 +1452,13 @@
     }
 
     function render() {
+        // Actualizar la fecha actual en cada renderizado
+        const diaHoyActual = new Date().toLocaleDateString('es-ES');
+        if(diaHoyActual !== diaActual) {
+            console.log('📅 Cambio de día detectado en render:', diaActual, '->', diaHoyActual);
+            diaActual = diaHoyActual;
+        }
+        actualizarDiaActual();
         const lista = document.getElementById('lista');
         const filtro = document.getElementById('filtroStock').value.toLowerCase();
         let totalInv = 0;
@@ -1406,12 +1488,16 @@
         renderProveedores();
         
         // Actualizar totales diarios considerando gastos
-        const costosDelDiaActual = gastosOperativos.filter(c => c.fecha === diaActual).reduce((sum, c) => sum + c.monto, 0);
+        const costosDelDiaActual = gastosOperativos.filter(c => c.fecha === diaHoy).reduce((sum, c) => sum + c.monto, 0);
         if(costosDelDiaActual > 0) {
             const stats = document.querySelector('.stats-box:nth-of-type(3)');
             if(stats) stats.title = `Ganancia Neta = Ganancia Bruta (Bs. ${fM(gan)}) - Gastos (Bs. ${fM(costosDelDiaActual)})`;
         }
-        const vHoy = ventas.filter(v => v.dia === diaActual);
+        // Filtrar ventas del día actual (actualizado dinámicamente)
+        const diaHoy = new Date().toLocaleDateString('es-ES');
+        console.log('🔍 Filtrando ventas para el día:', diaHoy, '- Total ventas en sistema:', ventas.length);
+        const vHoy = ventas.filter(v => v.dia === diaHoy);
+        console.log('✅ Ventas encontradas para hoy:', vHoy.length);
         let ing = 0, gan = 0, ivaRec = 0;
         vHoy.forEach(v => { 
             if(!v.anulada) { 
@@ -1422,22 +1508,25 @@
         });
         document.getElementById('ingresosTotales').textContent = 'Bs. ' + fM(ing);
         document.getElementById('ivaRecaudado').textContent = 'Bs. ' + fM(ivaRec);
-        // Calcular ganancia neta considerando gastos del día
-        const costosDelDia = gastosOperativos.filter(c => c.fecha === diaActual).reduce((sum, c) => sum + c.monto, 0);
-        console.log('Gastos del día para ganancia neta:', costosDelDia);
+        // Calcular ganancia neta considerando gastos del día        const costosDelDia = gastrosOperativos.filter(c => c.fecha === diaHoy).reduce((sum, c) => sum + c.monto, 0);
+        console.log('💰 Gastos del día (' + diaHoy + ') para ganancia neta:', costosDelDia);
         const gananciaNeta = gan - costosDelDia;
         document.getElementById('gananciaEstimada').textContent = 'Bs. ' + fM(gananciaNeta);
         document.getElementById('gananciaEstimada').title = `Ganancia Bruta: Bs. ${fM(gan)} - Gastos: Bs. ${fM(costosDelDia)}`;
         
         const ventasHistorialElement = document.getElementById('ventasHistorial');
         if(ventasHistorialElement) {
-            console.log('Renderizando ventas del día:', vHoy);
-            ventasHistorialElement.innerHTML = vHoy.length > 0 ? vHoy.reverse().map(v => `
-                <div class="item ${v.anulada ? 'anulada' : ''}">
-                    <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)} ${v.ivaMonto > 0 ? '(Inc. IVA)' : ''} (${v.hora})
-                    <small style="color:var(--primary); font-weight:bold;">Ganancia: Bs. ${fM(v.ganancia)}</small>
-                    ${!v.anulada ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : '<b>[ANULADA]</b>'}
-                </div>`).join('') : '<p style="text-align:center; color:#999; padding:20px;">Sin ventas registradas hoy</p>';
+            console.log('📊 Renderizando ventas del día (' + diaHoy + '):', vHoy.length, 'ventas');
+            if(vHoy.length > 0) {
+                ventasHistorialElement.innerHTML = vHoy.reverse().map(v => `
+                    <div class="item ${v.anulada ? 'anulada' : ''}">
+                        <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)} ${v.ivaMonto > 0 ? '(Inc. IVA)' : ''} (${v.hora})
+                        <small style="color:var(--primary); font-weight:bold;">Ganancia: Bs. ${fM(v.ganancia)}</small>
+                        ${!v.anulada ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : '<b>[ANULADA]</b>'}
+                    </div>`).join('');
+            } else {
+                ventasHistorialElement.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Sin ventas registradas hoy</p>';
+            }
         } else {
             console.error('❌ Elemento ventasHistorial no encontrado');
         }
@@ -1511,13 +1600,24 @@
         const q = document.getElementById('busquedaProducto').value.toLowerCase();
         const res = document.getElementById('searchResults');
         if(!q) return res.innerHTML = '';
-        res.innerHTML = items.filter(i => i.nombre.toLowerCase().includes(q) && i.cantidad > 0).map(i => `
+        
+        const resultados = items.filter(i => i.nombre.toLowerCase().includes(q) && i.cantidad > 0);
+        console.log('🔍 Búsqueda de texto:', q, '- Resultados:', resultados.length);
+        
+        res.innerHTML = resultados.map(i => `
             <div class="search-result-item" onclick="prepararAddCarrito(${i.id})"><div><b>${i.nombre}</b> ${i.exento ? '<span class="exento-badge">EXENTO</span>' : ''}<br><small>Bs. ${fM(i.precioVenta * tasaDolar)} /${i.unidad || 'UND'}</small></div><button class="btn-add-search">AÑADIR</button></div>
         `).join('');
     }
 
     function prepararAddCarrito(id) {
         const i = items.find(x => x.id === id);
+        if(!i) {
+            alert('Producto no encontrado');
+            return;
+        }
+        
+        console.log('🛒 Preparando para añadir al carrito:', i.nombre);
+        
         if(i.unidad === 'KG') {
             itemPendientePeso = i;
             document.getElementById('pesoProductoNombre').textContent = i.nombre + " (Bs. " + fM(i.precioVenta * tasaDolar) + "/Kg)";
@@ -1528,7 +1628,9 @@
                 const p = parseFloat(document.getElementById('pesoInput').value) || 0;
                 document.getElementById('pesoPreview').textContent = 'Total: Bs. ' + fM(p * i.precioVenta * tasaDolar);
             };
-        } else addCarrito(id, 1);
+        } else {
+            addCarrito(id, 1);
+        }
     }
 
     function confirmarPeso() {
@@ -1543,9 +1645,23 @@
 
     function addCarrito(id, cant) {
         const i = items.find(x => x.id === id);
+        if(!i) {
+            alert('Producto no encontrado');
+            return;
+        }
+        
         const ex = carrito.find(x => x.id === id && x.unidad !== 'KG');
-        if(ex && i.unidad !== 'KG') { if(ex.q + cant <= i.cantidad) ex.q += cant; else alert('Sin stock'); }
-        else carrito.push({ ...i, q: cant });
+        if(ex && i.unidad !== 'KG') { 
+            if(ex.q + cant <= i.cantidad) {
+                ex.q += cant;
+                console.log('✏️ Cantidad actualizada:', i.nombre, '- Nueva cantidad:', ex.q);
+            } else {
+                alert('Sin stock suficiente');
+            }
+        } else {
+            carrito.push({ ...i, q: cant });
+            console.log('✅ Producto añadido al carrito:', i.nombre, '- Cantidad:', cant);
+        }
         renderCarrito();
     }
 
@@ -1601,6 +1717,8 @@
     function finalizarVenta(esCredito) {
         if(!carrito.length) return alert('Carrito vacío');
         
+        console.log('💳 Finalizando venta - Tipo:', esCredito ? 'Crédito' : 'Contado', '- Productos:', carrito.length);
+        
         let subGravV = 0, subExentoV = 0, ganV = 0, det = "";
         const conIVA = document.getElementById('aplicarIVA').checked;
         
@@ -1633,6 +1751,10 @@
             if(item) item.cantidad -= c.q;
         });
         
+        // Asegurar que diaActual está actualizado ANTES de guardar
+        const diaParaGuardar = new Date().toLocaleDateString('es-ES');
+        console.log('💾 Guardando venta con fecha:', diaParaGuardar);
+        
         ventas.push({ 
             id: Date.now(), 
             producto: det.slice(0,-2), 
@@ -1641,7 +1763,7 @@
             ivaMonto: ivaMonto,
             total: totalV, 
             ganancia: ganV, 
-            dia: diaActual, 
+            dia: diaParaGuardar, 
             hora: new Date().toLocaleTimeString(), 
             tipo: esCredito?'credito':'contado', 
             anulada: false 
@@ -1653,9 +1775,10 @@
                 cliente: clienteNombre, 
                 monto: totalV, 
                 detalle: det.slice(0,-2), 
-                fecha: diaActual,
+                fecha: diaParaGuardar,
                 pagado: false
             });
+            console.log('💳 Crédito registrado para:', clienteNombre, '- Monto: Bs.', totalV, '- Día:', diaParaGuardar);
         }
         
         carrito = []; 
@@ -1740,20 +1863,34 @@
     }
 
     function cerrarDia() {
-        const vHoy = ventas.filter(v => v.dia === diaActual && !v.anulada);
-        if(!vHoy.length) return alert('No hay ventas hoy');
+        const diaHoyParaCierre = new Date().toLocaleDateString('es-ES');
+        
+        // Primero, detectar si hay ventas de días anteriores sin cerrar
+        const ventasAnteriores = ventas.filter(v => v.dia !== diaHoyParaCierre && !v.anulada);
+        if(ventasAnteriores.length > 0) {
+            const diasPendientes = [...new Set(ventasAnteriores.map(v => v.dia))];
+            const mensaje = `⚠️ AVISO: Hay ventas pendientes de cierre de ${diasPendientes.length} día(s):\n${diasPendientes.join(', ')}\n\n¿Deseas cerrar esos días primero?`;
+            if(confirm(mensaje)) {
+                cerrarDiasAnteriores(diasPendientes);
+                return; // Salir para que el usuario cierre primero los días anteriores
+            }
+        }
+        
+        const vHoy = ventas.filter(v => v.dia === diaHoyParaCierre && !v.anulada);
+        if(!vHoy.length) return alert('No hay ventas para cerrar hoy');
+        
+        console.log('🔐 Cerrando caja para el día:', diaHoyParaCierre, '- Ventas:', vHoy.length);
         if(confirm('¿Cerrar caja? Se guardarán los totales de ventas, IVA, ganancias y costos operativos.')) {
             let ing = 0, gan = 0, iva = 0, costos = 0;
             vHoy.forEach(v => { ing += v.total; gan += v.ganancia; iva += (v.ivaMonto || 0); });
             
             // Sumar costos operativos del día
-            const costosHoy = gastosOperativos.filter(c => c.fecha === diaActual);
+            const costosHoy = gastrosOperativos.filter(c => c.fecha === diaHoyParaCierre);
             costosHoy.forEach(c => { costos += c.monto; });
             
             const gananciaNeta = gan - costos;
-            
             cierres.push({ 
-                fecha: diaActual, 
+                fecha: diaHoyParaCierre, 
                 ingresos: ing, 
                 iva: iva, 
                 ganancia: gan,
@@ -1762,8 +1899,8 @@
                 tipo: 'DIARIO' 
             });
             
-            ventas = ventas.filter(v => v.dia !== diaActual);
-            gastosOperativos = gastosOperativos.filter(c => c.fecha !== diaActual);
+            ventas = ventas.filter(v => v.dia !== diaHoyParaCierre);
+            gastrosOperativos = gastrosOperativos.filter(c => c.fecha !== diaHoyParaCierre);
             sync(); 
             render(); 
             alert(`Caja cerrada.\nGanancia Bruta: Bs. ${fM(gan)}\nCostos: Bs. ${fM(costos)}\nGanancia Neta: Bs. ${fM(gananciaNeta)}`);
