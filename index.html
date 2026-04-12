@@ -203,12 +203,12 @@
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('inventario')">📦 Stock</button>
-        <button class="tab-btn" onclick="switchTab('ventas')">🛒 Venta</button>
-        <button class="tab-btn" onclick="switchTab('creditos')">💳 Créditos</button>
-        <button class="tab-btn" onclick="switchTab('proveedores')">🏢 Prov.</button>
-        <button class="tab-btn" onclick="switchTab('gastos')">💸 Gastos</button>
-        <button class="tab-btn" onclick="switchTab('reportes')">📊 Rep.</button>
+        <button id="tab-inventario" class="tab-btn active" onclick="switchTab('inventario')">📦 Stock</button>
+        <button id="tab-ventas" class="tab-btn" onclick="switchTab('ventas')">🛒 Venta</button>
+        <button id="tab-creditos" class="tab-btn" onclick="switchTab('creditos')">💳 Créditos</button>
+        <button id="tab-proveedores" class="tab-btn" onclick="switchTab('proveedores')">🏢 Prov.</button>
+        <button id="tab-gastos" class="tab-btn" onclick="switchTab('gastos')">💸 Gastos</button>
+        <button id="tab-reportes" class="tab-btn" onclick="switchTab('reportes')">📊 Rep.</button>
     </div>
 
     <!-- TAB: INVENTARIO -->
@@ -233,7 +233,7 @@
             <label>Código de Barras (SKU)</label>
             <div class="camera-container">
                 <input type="text" id="codigoBarras" placeholder="Escanea o ingresa código..." class="search-input" style="margin-bottom: 0;">
-                <button class="btn-camera" onclick="toggleCameraInventario()">📷 ESCANEAR</button>
+                <button id="btn-camera-inventario" class="btn-camera" onclick="toggleCameraInventario()">📷 ESCANEAR</button>
             </div>
             <div id="qr-reader-inventario" style="display:none; margin-top:10px;"></div>
             <div class="qr-reader-status" id="qr-status-inventario"></div>
@@ -302,7 +302,7 @@
         <!-- BÚSQUEDA CON ESCANEO DE CÁMARA -->
         <div class="camera-container">
             <input type="text" id="busquedaProducto" class="search-input" placeholder="🔍 Buscar por nombre..." oninput="buscarVenta()" style="margin-bottom: 0;">
-            <button class="btn-camera" onclick="toggleCameraVentas()">📷 ESCANEAR</button>
+            <button id="btn-camera-ventas" class="btn-camera" onclick="toggleCameraVentas()">📷 ESCANEAR</button>
         </div>
         <div class="input-group" style="margin-top: 10px;">
             <label>Código de Barras (Escáner)</label>
@@ -976,6 +976,12 @@
     }
 
     function switchTab(tab) {
+        const version = configMaestra.version || 'BASICO';
+        if((version === 'BASICO' || version === 'PRO') && (tab === 'proveedores' || tab === 'gastos')) {
+            alert("Este módulo no está disponible en su versión actual.");
+            return;
+        }
+
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tab).classList.add('active');
@@ -1580,6 +1586,36 @@
     }
 
     function render() {
+        // --- BLOQUEOS POR VERSIÓN ---
+        const version = configMaestra.version || 'BASICO';
+        
+        // Control de Pestañas
+        const tabProv = document.getElementById('tab-proveedores');
+        const tabGastos = document.getElementById('tab-gastos');
+        
+        if(version === 'BASICO' || version === 'PRO') {
+            if(tabProv) tabProv.style.display = 'none';
+            if(tabGastos) tabGastos.style.display = 'none';
+        } else {
+            if(tabProv) tabProv.style.display = 'block';
+            if(tabGastos) tabGastos.style.display = 'block';
+        }
+
+        // Control de Escáner (Cámara)
+        const camInv = document.getElementById('btn-camera-inventario');
+        const camVentas = document.getElementById('btn-camera-ventas');
+        const scanVentaInput = document.getElementById('codigoBarrasVenta');
+        
+        if(version === 'BASICO') {
+            if(camInv) camInv.style.display = 'none';
+            if(camVentas) camVentas.style.display = 'none';
+            if(scanVentaInput) scanVentaInput.parentElement.style.display = 'none';
+        } else {
+            if(camInv) camInv.style.display = 'block';
+            if(camVentas) camVentas.style.display = 'block';
+            if(scanVentaInput) scanVentaInput.parentElement.style.display = 'block';
+        }
+
         // Actualizar la fecha actual en cada renderizado
         const diaHoyActual = new Date().toLocaleDateString('es-ES');
         if(diaHoyActual !== diaActual) {
