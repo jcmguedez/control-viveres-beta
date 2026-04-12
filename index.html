@@ -863,7 +863,6 @@
 
     function fM(n) { return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
 
-    function init() {
     let sesionDuenoActiva = false;
     let configDueno = JSON.parse(localStorage.getItem('beta_dueno_config')) || {
         clave: '1234',
@@ -879,6 +878,8 @@
         hideTabGastos: false,
         hideTabReportes: false
     };
+
+    function init() {
 
         items = JSON.parse(localStorage.getItem('beta_items')) || [];
         ventas = JSON.parse(localStorage.getItem('beta_ventas')) || [];
@@ -2229,9 +2230,12 @@
     function limpiarCarrito() { if(confirm('¿Vaciar?')) { carrito = []; renderCarrito(); } }
     function toggleConfig() { 
         const s = document.getElementById('configSection'); 
-        if(s.style.display === 'none') {
+        if(s.style.display === 'none' || s.style.display === '') {
             const clave = prompt("Introduce la Clave de Administrador:");
-            if(clave === configDueno.clave || clave === (configMaestra.claveMaestra || 'admin123')) {
+            const claveAdmin = configDueno.clave || '1234';
+            const claveDev = configMaestra.claveMaestra || 'admin123';
+            
+            if(clave === claveAdmin || clave === claveDev) {
                 s.style.display = 'block';
                 cargarValoresConfig();
             } else if(clave !== null) {
