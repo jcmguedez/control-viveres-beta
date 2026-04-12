@@ -198,9 +198,64 @@
             <button class="btn-danger" onclick="toggleConfig()" style="width: 100%;">CERRAR</button>
         </div>
         <button class="btn-info" onclick="generarQR()" style="width:100%; margin-top:10px;">📱 MOSTRAR QR DE CONEXIÓN</button>
-        <button class="btn-vender" onclick="solicitarAccesoDueno()" style="width:100%; margin-top:10px; background:var(--primary);">👤 CONFIGURACIÓN DEL DUEÑO</button>
+        
+        <div class="section-header" style="margin-top:20px; border-bottom: 1px solid #ccc;">
+            <h4>🛡️ Permisos y Seguridad</h4>
+        </div>
+        
+        <div class="input-group">
+            <label>Nueva Clave Administrador:</label>
+            <input type="password" id="duenoClave" placeholder="1234" onchange="guardarConfigDueno()">
+        </div>
+
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Stock</span>
+            <label class="switch"><input type="checkbox" id="hideTabInventario" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Ventas</span>
+            <label class="switch"><input type="checkbox" id="hideTabVentas" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Créditos</span>
+            <label class="switch"><input type="checkbox" id="hideTabCreditos" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Proveedores</span>
+            <label class="switch"><input type="checkbox" id="hideTabProveedores" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Gastos</span>
+            <label class="switch"><input type="checkbox" id="hideTabGastos" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Reportes</span>
+            <label class="switch"><input type="checkbox" id="hideTabReportes" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+
+        <div class="section-header" style="margin-top:15px;">
+            <h4>🚫 Restricciones (Solo Lectura)</h4>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Bloquear Modificación Stock</span>
+            <label class="switch"><input type="checkbox" id="permisoInventario" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Bloquear Ver Costos</span>
+            <label class="switch"><input type="checkbox" id="permisoVerCostos" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Bloquear Anulación Ventas</span>
+            <label class="switch"><input type="checkbox" id="permisoAnularVentas" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+
+        <div class="input-group" style="margin-top:15px;">
+            <label>Versión Comprada:</label>
+            <input type="text" id="displayVersion" readonly style="background:#eee; color:#666;">
+        </div>
+
         <div id="qrcode"></div>
-        <div style="text-align:center; margin-top:20px; opacity:0.3; font-size:0.7rem;" onclick="solicitarAccesoMaestro()">⚙️ v2.5.0</div>
+        <div style="text-align:center; margin-top:20px; opacity:0.3; font-size:0.7rem;" onclick="solicitarAccesoMaestro()">⚙️ v2.5.1</div>
     </div>
 
     <div class="tabs">
@@ -642,49 +697,7 @@
 </div>
 
 <!-- MODAL CONFIGURACIÓN DEL DUEÑO -->
-<div id="modalDueno" class="modal">
-    <div class="modal-content" style="max-width:450px;">
-        <h3 style="color:var(--primary); border-bottom:2px solid var(--primary); padding-bottom:10px;">👤 CONFIGURACIÓN DEL DUEÑO</h3>
-        
-        <div class="section-header" style="margin-top:15px;">
-            <h4>🔑 Seguridad y Acceso</h4>
-        </div>
-        <div class="input-group">
-            <label>Nueva Clave del Dueño:</label>
-            <input type="password" id="duenoClave" placeholder="1234" onchange="guardarConfigDueno()">
-        </div>
 
-        <div class="section-header" style="margin-top:15px;">
-            <h4>🛡️ Permisos de Empleados</h4>
-            <small style="color:#666;">Marca lo que el empleado <b>SÍ</b> puede hacer:</small>
-        </div>
-        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
-            <span>Modificar Inventario (Editar/Borrar)</span>
-            <label class="switch"><input type="checkbox" id="permisoInventario" onchange="guardarConfigDueno()"><span class="slider"></span></label>
-        </div>
-        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
-            <span>Ver Precios de Costo</span>
-            <label class="switch"><input type="checkbox" id="permisoVerCostos" onchange="guardarConfigDueno()"><span class="slider"></span></label>
-        </div>
-        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
-            <span>Anular Ventas Realizadas</span>
-            <label class="switch"><input type="checkbox" id="permisoAnularVentas" onchange="guardarConfigDueno()"><span class="slider"></span></label>
-        </div>
-        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
-            <span>Ver Reportes de Ganancia</span>
-            <label class="switch"><input type="checkbox" id="permisoVerReportes" onchange="guardarConfigDueno()"><span class="slider"></span></label>
-        </div>
-        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
-            <span>Gestionar Proveedores</span>
-            <label class="switch"><input type="checkbox" id="permisoProveedores" onchange="guardarConfigDueno()"><span class="slider"></span></label>
-        </div>
-
-        <div class="btn-grid" style="margin-top:20px;">
-            <button class="btn-add" onclick="cerrarModalDueno()">GUARDAR Y SALIR</button>
-            <button class="btn-danger" onclick="cerrarSesionDueno()" style="background:#666;">CERRAR SESIÓN</button>
-        </div>
-    </div>
-</div>
 
 <!-- MODAL CRÉDITO -->
 <div id="modalCredito" class="modal">
@@ -858,7 +871,13 @@
         permisoVerCostos: true,
         permisoAnularVentas: true,
         permisoVerReportes: true,
-        permisoProveedores: true
+        permisoProveedores: true,
+        hideTabInventario: false,
+        hideTabVentas: false,
+        hideTabCreditos: false,
+        hideTabProveedores: false,
+        hideTabGastos: false,
+        hideTabReportes: false
     };
 
         items = JSON.parse(localStorage.getItem('beta_items')) || [];
@@ -908,92 +927,10 @@
     localStorage.setItem('beta_device_id', deviceId);
 
 
-    function solicitarAccesoDueno() {
-        if(sesionDuenoActiva) { abrirModalDueno(); return; }
-        const clave = prompt("Introduce la Clave del Dueño:");
-        if(clave === configDueno.clave) {
-            sesionDuenoActiva = true;
-            abrirModalDueno();
-            render();
-        } else {
-            alert("Clave incorrecta.");
-        }
-    }
-
-    function abrirModalDueno() {
-        document.getElementById('duenoClave').value = configDueno.clave;
-        document.getElementById('permisoInventario').checked = configDueno.permisoInventario;
-        document.getElementById('permisoVerCostos').checked = configDueno.permisoVerCostos;
-        document.getElementById('permisoAnularVentas').checked = configDueno.permisoAnularVentas;
-        document.getElementById('permisoVerReportes').checked = configDueno.permisoVerReportes;
-        document.getElementById('permisoProveedores').checked = configDueno.permisoProveedores;
-        document.getElementById('modalDueno').classList.add('active');
-    }
-
-    function guardarConfigDueno() {
-        configDueno.clave = document.getElementById('duenoClave').value.trim() || '1234';
-        configDueno.permisoInventario = document.getElementById('permisoInventario').checked;
-        configDueno.permisoVerCostos = document.getElementById('permisoVerCostos').checked;
-        configDueno.permisoAnularVentas = document.getElementById('permisoAnularVentas').checked;
-        configDueno.permisoVerReportes = document.getElementById('permisoVerReportes').checked;
-        configDueno.permisoProveedores = document.getElementById('permisoProveedores').checked;
-        localStorage.setItem('beta_dueno_config', JSON.stringify(configDueno));
-    }
-
-    function cerrarModalDueno() {
-        document.getElementById('modalDueno').classList.remove('active');
-        render();
-    }
-
-    function cerrarSesionDueno() {
-        sesionDuenoActiva = false;
-        cerrarModalDueno();
-        alert("Sesión de Dueño cerrada. Modo Empleado activo.");
-    }
 
 
-    function solicitarAccesoDueno() {
-        if(sesionDuenoActiva) { abrirModalDueno(); return; }
-        const clave = prompt("Introduce la Clave del Dueño:");
-        if(clave === configDueno.clave) {
-            sesionDuenoActiva = true;
-            abrirModalDueno();
-            render();
-        } else {
-            alert("Clave incorrecta.");
-        }
-    }
 
-    function abrirModalDueno() {
-        document.getElementById('duenoClave').value = configDueno.clave;
-        document.getElementById('permisoInventario').checked = configDueno.permisoInventario;
-        document.getElementById('permisoVerCostos').checked = configDueno.permisoVerCostos;
-        document.getElementById('permisoAnularVentas').checked = configDueno.permisoAnularVentas;
-        document.getElementById('permisoVerReportes').checked = configDueno.permisoVerReportes;
-        document.getElementById('permisoProveedores').checked = configDueno.permisoProveedores;
-        document.getElementById('modalDueno').classList.add('active');
-    }
 
-    function guardarConfigDueno() {
-        configDueno.clave = document.getElementById('duenoClave').value.trim() || '1234';
-        configDueno.permisoInventario = document.getElementById('permisoInventario').checked;
-        configDueno.permisoVerCostos = document.getElementById('permisoVerCostos').checked;
-        configDueno.permisoAnularVentas = document.getElementById('permisoAnularVentas').checked;
-        configDueno.permisoVerReportes = document.getElementById('permisoVerReportes').checked;
-        configDueno.permisoProveedores = document.getElementById('permisoProveedores').checked;
-        localStorage.setItem('beta_dueno_config', JSON.stringify(configDueno));
-    }
-
-    function cerrarModalDueno() {
-        document.getElementById('modalDueno').classList.remove('active');
-        render();
-    }
-
-    function cerrarSesionDueno() {
-        sesionDuenoActiva = false;
-        cerrarModalDueno();
-        alert("Sesión de Dueño cerrada. Modo Empleado activo.");
-    }
 
     function solicitarAccesoMaestro() {
         const clave = prompt("Introduce la Clave Maestra de Desarrollador:");
@@ -1730,41 +1667,35 @@
     }
 
     function render() {
-        // --- BLOQUEOS POR VERSIÓN Y ROL ---
+        // --- BLOQUEOS POR VERSIÓN Y PERMISOS ---
         const version = configMaestra.version || 'BASICO';
         const p = configDueno;
-        const esDueno = sesionDuenoActiva;
         
-        // Control de Pestañas (Versión + Permisos)
-        const tabProv = document.getElementById('tab-proveedores');
-        const tabGastos = document.getElementById('tab-gastos');
-        const tabRep = document.getElementById('tab-reportes');
-        
-        // Visibilidad por Versión
-        let vProv = (version === 'PREMIUM');
-        let vGastos = (version === 'PREMIUM');
-        
-        // Restricción por Permisos (si no es dueño)
-        if(!esDueno) {
-            if(!p.permisoProveedores) vProv = false;
-            if(!p.permisoVerReportes) {
-                if(tabRep) tabRep.style.display = 'none';
-            } else {
-                if(tabRep) tabRep.style.display = 'block';
-            }
-        } else {
-            if(tabRep) tabRep.style.display = 'block';
+        // Control de Visibilidad de Pestañas
+        const tabs = {
+            'tab-inventario': p.hideTabInventario,
+            'tab-ventas': p.hideTabVentas,
+            'tab-creditos': p.hideTabCreditos,
+            'tab-proveedores': p.hideTabProveedores || (version !== 'PREMIUM'),
+            'tab-gastos': p.hideTabGastos || (version !== 'PREMIUM'),
+            'tab-reportes': p.hideTabReportes
+        };
+
+        for (const [id, hidden] of Object.entries(tabs)) {
+            const el = document.getElementById(id);
+            if(el) el.style.display = hidden ? 'none' : 'block';
         }
 
-        if(tabProv) tabProv.style.display = vProv ? 'block' : 'none';
-        if(tabGastos) tabGastos.style.display = vGastos ? 'block' : 'none';
-
-        // Bloqueos de Acción en Inventario
+        // Bloqueos de Acción (Solo Lectura)
+        // Inventario
         const formInv = document.querySelector('#inventario h2#formTitle');
         const inputsInv = document.querySelectorAll('#inventario input, #inventario select, #inventario button.btn-add');
-        if(!esDueno && !p.permisoInventario) {
+        if(!p.permisoInventario) {
             if(formInv) formInv.style.display = 'none';
-            inputsInv.forEach(el => { if(el.id !== 'filtroStock') el.style.display = 'none'; });
+            inputsInv.forEach(el => { 
+                if(el.id !== 'filtroStock' && el.id !== 'tasa' && el.id !== 'stockMinimo') el.style.display = 'none'; 
+            });
+            // Ocultar botones de editar/eliminar en la lista (se maneja en el map de la lista)
         } else {
             if(formInv) formInv.style.display = 'block';
             inputsInv.forEach(el => el.style.display = '');
@@ -1809,7 +1740,7 @@
                 </div>
                 <div style="font-size:0.9rem; font-weight:bold;">Bs. ${fM(pVBs)} <small>/${unit}</small></div>
                 <div class="price-dual">$ ${fM(i.precioVenta)} /${unit}</div>
-                <div class="item-actions"><button class="btn-edit" onclick="editarItem(${i.id})">✏️</button><button class="btn-delete" onclick="eliminarItem(${i.id})">🗑️</button></div>
+                <div class="item-actions" style="${p.permisoInventario ? '' : 'display:none;'}"><button class="btn-edit" onclick="editarItem(${i.id})">✏️</button><button class="btn-delete" onclick="eliminarItem(${i.id})">🗑️</button></div>
             </div>`;
         }).join('');
         document.getElementById('totalDisplay').textContent = 'Bs. ' + fM(totalInv);
@@ -1846,7 +1777,7 @@
                 <div class="item ${v.anulada ? 'anulada' : ''}">
                     <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)} (${v.hora})
                     <small style="color:var(--primary); font-weight:bold;">Ganancia: Bs. ${fM(v.ganancia)}</small>
-                    ${!v.anulada ? ((sesionDuenoActiva || configDueno.permisoAnularVentas) ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : "") : "<b>[ANULADA]</b>"}
+                    ${!v.anulada ? (p.permisoAnularVentas ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : "") : "<b>[ANULADA]</b>"}
                 </div>`).join('') : '<p style="text-align:center; color:#999;">Sin ventas hoy</p>';
 
             const htmlVPendientes = vPendientes.length > 0 ? `
@@ -2296,7 +2227,53 @@
     function cerrarModalCredito() { document.getElementById('modalCredito').classList.remove('active'); }
     function pagarCredito(idx) { if(confirm('¿Pagado?')) { creditos.splice(idx,1); sync(); render(); } }
     function limpiarCarrito() { if(confirm('¿Vaciar?')) { carrito = []; renderCarrito(); } }
-    function toggleConfig() { const s = document.getElementById('configSection'); s.style.display = s.style.display === 'none' ? 'block' : 'none'; }
+    function toggleConfig() { 
+        const s = document.getElementById('configSection'); 
+        if(s.style.display === 'none') {
+            const clave = prompt("Introduce la Clave de Administrador:");
+            if(clave === configDueno.clave || clave === (configMaestra.claveMaestra || 'admin123')) {
+                s.style.display = 'block';
+                cargarValoresConfig();
+            } else if(clave !== null) {
+                alert("Clave incorrecta.");
+            }
+        } else {
+            s.style.display = 'none';
+        }
+    }
+
+    function cargarValoresConfig() {
+        document.getElementById('duenoClave').value = configDueno.clave;
+        document.getElementById('permisoInventario').checked = !configDueno.permisoInventario;
+        document.getElementById('permisoVerCostos').checked = !configDueno.permisoVerCostos;
+        document.getElementById('permisoAnularVentas').checked = !configDueno.permisoAnularVentas;
+        
+        document.getElementById('hideTabInventario').checked = configDueno.hideTabInventario;
+        document.getElementById('hideTabVentas').checked = configDueno.hideTabVentas;
+        document.getElementById('hideTabCreditos').checked = configDueno.hideTabCreditos;
+        document.getElementById('hideTabProveedores').checked = configDueno.hideTabProveedores;
+        document.getElementById('hideTabGastos').checked = configDueno.hideTabGastos;
+        document.getElementById('hideTabReportes').checked = configDueno.hideTabReportes;
+        
+        document.getElementById('displayVersion').value = configMaestra.version || 'BASICO';
+    }
+
+    function guardarConfigDueno() {
+        configDueno.clave = document.getElementById('duenoClave').value.trim() || '1234';
+        configDueno.permisoInventario = !document.getElementById('permisoInventario').checked;
+        configDueno.permisoVerCostos = !document.getElementById('permisoVerCostos').checked;
+        configDueno.permisoAnularVentas = !document.getElementById('permisoAnularVentas').checked;
+        
+        configDueno.hideTabInventario = document.getElementById('hideTabInventario').checked;
+        configDueno.hideTabVentas = document.getElementById('hideTabVentas').checked;
+        configDueno.hideTabCreditos = document.getElementById('hideTabCreditos').checked;
+        configDueno.hideTabProveedores = document.getElementById('hideTabProveedores').checked;
+        configDueno.hideTabGastos = document.getElementById('hideTabGastos').checked;
+        configDueno.hideTabReportes = document.getElementById('hideTabReportes').checked;
+        
+        localStorage.setItem('beta_dueno_config', JSON.stringify(configDueno));
+        render();
+    }
     function generarQR() { const q = document.getElementById('qrcode'); q.innerHTML = ''; new QRCode(q, { text: window.location.href, width: 150, height: 150 }); }
     function descargarReporte() {
         let csv = "FECHA,TIPO,VENTAS_TOTAL,IVA,GANANCIA_NETA\n" + cierres.map(c => `${c.fecha},${c.tipo},${c.ingresos},${c.iva},${c.ganancia}`).join("\n");
