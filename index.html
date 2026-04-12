@@ -199,14 +199,16 @@
         </div>
         <button class="btn-info" onclick="generarQR()" style="width:100%; margin-top:10px;">📱 MOSTRAR QR DE CONEXIÓN</button>
         <div id="qrcode"></div>
+        <div style="text-align:center; margin-top:20px; opacity:0.3; font-size:0.7rem;" onclick="solicitarAccesoMaestro()">⚙️ v2.5.0</div>
     </div>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('inventario')">📦 Stock</button>
         <button class="tab-btn" onclick="switchTab('ventas')">🛒 Venta</button>
         <button class="tab-btn" onclick="switchTab('creditos')">💳 Créditos</button>
-        <button class="tab-btn" onclick="switchTab('proveedores')">🏢 Proveedores</button>
-        <button class="tab-btn" onclick="switchTab('reportes')">📊 Reportes</button>
+        <button class="tab-btn" onclick="switchTab('proveedores')">🏢 Prov.</button>
+        <button class="tab-btn" onclick="switchTab('gastos')">💸 Gastos</button>
+        <button class="tab-btn" onclick="switchTab('reportes')">📊 Rep.</button>
     </div>
 
     <!-- TAB: INVENTARIO -->
@@ -514,6 +516,30 @@
         </div>
     </div>
 
+    <!-- TAB: GASTOS -->
+    <div id="gastos" class="tab-content">
+        <h2>💰 Gestión de Gastos Operativos</h2>
+        <div class="stats-box" style="border-left-color: var(--danger); margin-bottom: 20px;">
+            <div class="stats-label">TOTAL GASTOS HOY</div>
+            <div class="stats-value" id="totalGastosHoyDisplay" style="color:var(--danger);">Bs. 0,00</div>
+        </div>
+
+        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1;">
+                <label>Concepto del Gasto</label>
+                <input type="text" id="conceptoGasto" placeholder="Ej: Alquiler, Luz, Sueldo..." class="search-input">
+            </div>
+            <div style="flex:1;">
+                <label>Monto (Bs.)</label>
+                <input type="number" id="montoGasto" placeholder="0.00" step="0.01" class="search-input">
+            </div>
+        </div>
+        <button class="btn-add" onclick="agregarGastoOperativo()" style="width:100%; margin-bottom:15px;">+ REGISTRAR GASTO</button>
+        
+        <h3>📋 Historial de Gastos (Hoy)</h3>
+        <div id="listaGastosOperativos" class="list-container" style="max-height:300px; overflow-y:auto; margin-bottom:15px;"></div>
+    </div>
+
     <!-- TAB: REPORTES -->
     <div id="reportes" class="tab-content">
         <h2>📊 Dashboard Control Diario</h2>
@@ -534,20 +560,6 @@
             <div class="stats-label">⚠️ PRODUCTOS EN FALLA</div>
             <div id="reporteFallas" style="font-size:0.85rem; margin-top:10px;"></div>
         </div>
-        
-        <h2>💰 Gastos Operativos del Día</h2>
-        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
-            <div style="flex:1;">
-                <label>Concepto</label>
-                <input type="text" id="conceptoGasto" placeholder="Ej: Alquiler, Luz, Sueldo..." class="search-input">
-            </div>
-            <div style="flex:1;">
-                <label>Monto (Bs.)</label>
-                <input type="number" id="montoGasto" placeholder="0.00" step="0.01" class="search-input">
-            </div>
-        </div>
-        <button class="btn-add" onclick="agregarGastoOperativo()" style="width:100%; margin-bottom:10px;">+ AÑADIR GASTO</button>
-        <div id="listaGastosOperativos" class="list-container" style="max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
         
         <button class="btn-vender" onclick="cerrarDia()" style="width:100%; margin-bottom:10px;">🔒 CERRAR CAJA (ARCHIVAR)</button>
         <button class="btn-danger" onclick="cerrarMes()" style="width:100%; margin-bottom:20px;">📅 CIERRE MENSUAL</button>
@@ -572,6 +584,50 @@
         <div class="btn-grid">
             <button class="btn-add" onclick="confirmarPeso()">AÑADIR</button>
             <button class="btn-danger" onclick="cerrarModalPeso()">CANCELAR</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL MAESTRO DESARROLLADOR -->
+<div id="modalMaestro" class="modal">
+    <div class="modal-content" style="max-width:450px;">
+        <h3 style="color:var(--danger); border-bottom:2px solid var(--danger); padding-bottom:10px;">🛠️ PANEL MAESTRO (DEV)</h3>
+        
+        <div class="section-header" style="margin-top:15px;">
+            <h4>🚀 Configuración de Versión</h4>
+        </div>
+        <div class="input-group">
+            <label>Versión del Sistema:</label>
+            <select id="devVersion" onchange="guardarConfigMaestra()">
+                <option value="BASICO">Básico (2 Dispositivos)</option>
+                <option value="PRO">Pro (3 Dispositivos)</option>
+                <option value="PREMIUM">Premium (Ilimitado/Personalizado)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Límite Manual de Dispositivos:</label>
+            <input type="number" id="devLimiteDispositivos" onchange="guardarConfigMaestra()">
+        </div>
+
+        <div class="section-header" style="margin-top:15px;">
+            <h4>🔥 Conexión Firebase (Ruta Cliente)</h4>
+        </div>
+        <div class="input-group">
+            <label>Ruta Base del Cliente (Path):</label>
+            <input type="text" id="devPathCliente" placeholder="cliente_001/" onchange="guardarConfigMaestra()">
+        </div>
+        <div class="input-group">
+            <label>Database URL:</label>
+            <input type="text" id="devDbUrl" placeholder="https://tu-proyecto.firebaseio.com" onchange="guardarConfigMaestra()">
+        </div>
+
+        <div class="section-header" style="margin-top:15px; color:var(--danger);">
+            <h4>⚠️ Mantenimiento Crítico</h4>
+        </div>
+        <button class="btn-danger" onclick="reinicioMaestroSistema()" style="width:100%; margin-bottom:10px;">🔥 REINICIAR TODA LA BASE DE DATOS</button>
+        
+        <div class="btn-grid" style="margin-top:20px;">
+            <button class="btn-add" onclick="cerrarModalMaestro()">GUARDAR Y SALIR</button>
         </div>
     </div>
 </div>
@@ -773,72 +829,112 @@
         render();
     }
 
-    // Credenciales de Firebase para Viveres-Pruebas
-    const FIREBASE_CONFIG = {
-        apiKey: "AIzaSyB_I1xI7BS1ArpvkAOXiOYJ5ezZQiNKL7E",
-        authDomain: "viveres-pruebas.firebaseapp.com",
-        databaseURL: "https://viveres-pruebas-default-rtdb.firebaseio.com",
-        projectId: "viveres-pruebas",
-        storageBucket: "viveres-pruebas.firebasestorage.app",
-        messagingSenderId: "1034847368340",
-        appId: "1:1034847368340:web:4584d1502544f33149f081"
+    // --- CONFIGURACIÓN MAESTRA Y LICENCIAMIENTO ---
+    let configMaestra = JSON.parse(localStorage.getItem('beta_dev_config')) || {
+        version: 'BASICO',
+        limiteDispositivos: 2,
+        pathCliente: 'viveres_beta/',
+        dbUrl: 'https://viveres-pruebas-default-rtdb.firebaseio.com',
+        apiKey: 'AIzaSyB_I1xI7BS1ArpvkAOXiOYJ5ezZQiNKL7E',
+        projectId: 'viveres-pruebas'
     };
 
+    let deviceId = localStorage.getItem('beta_device_id') || ('dev_' + Math.random().toString(36).substr(2, 9));
+    localStorage.setItem('beta_device_id', deviceId);
+
+    function solicitarAccesoMaestro() {
+        const clave = prompt("Introduce la Clave Maestra de Desarrollador:");
+        if(clave === "admin123") {
+            abrirModalMaestro();
+        } else {
+            alert("Acceso denegado.");
+        }
+    }
+
+    function abrirModalMaestro() {
+        document.getElementById('devVersion').value = configMaestra.version;
+        document.getElementById('devLimiteDispositivos').value = configMaestra.limiteDispositivos;
+        document.getElementById('devPathCliente').value = configMaestra.pathCliente;
+        document.getElementById('devDbUrl').value = configMaestra.dbUrl;
+        document.getElementById('modalMaestro').classList.add('active');
+    }
+
+    function cerrarModalMaestro() {
+        document.getElementById('modalMaestro').classList.remove('active');
+        location.reload();
+    }
+
+    function guardarConfigMaestra() {
+        configMaestra.version = document.getElementById('devVersion').value;
+        configMaestra.limiteDispositivos = parseInt(document.getElementById('devLimiteDispositivos').value) || 2;
+        configMaestra.pathCliente = document.getElementById('devPathCliente').value.trim() || 'viveres_beta/';
+        configMaestra.dbUrl = document.getElementById('devDbUrl').value.trim();
+        if(configMaestra.dbUrl.includes("firebaseio.com")) {
+            configMaestra.projectId = configMaestra.dbUrl.split('https://')[1].split('.firebaseio')[0].split('-default-rtdb')[0];
+        }
+        localStorage.setItem('beta_dev_config', JSON.stringify(configMaestra));
+    }
+
+    function reinicioMaestroSistema() {
+        if(confirm("⚠️ ATENCIÓN: Se borrarán TODOS los datos de este cliente en la nube y local. ¿Continuar?")) {
+            if(confirm("¿Estás ABSOLUTAMENTE seguro?")) {
+                if(db) {
+                    db.ref(configMaestra.pathCliente).remove();
+                    localStorage.clear();
+                    alert("Sistema reiniciado.");
+                    location.reload();
+                }
+            }
+        }
+    }
+
     function conectarFirebase() {
-        const projectId = document.getElementById('projectId').value.trim();
-        const apiKey = document.getElementById('apiKey').value.trim();
-        
-        // Si no hay valores en los inputs, usar la configuración predeterminada
-        const config = (projectId && apiKey) 
-            ? { apiKey, projectId, databaseURL: `https://${projectId}-default-rtdb.firebaseio.com` }
-            : FIREBASE_CONFIG;
-        
-        if(typeof firebase === "undefined" || !config.projectId || !config.apiKey || !navigator.onLine) { if(typeof render === "function") render(); return; }
+        if(typeof firebase === "undefined" || !navigator.onLine) { if(typeof render === "function") render(); return; }
+        const config = { apiKey: configMaestra.apiKey, projectId: configMaestra.projectId, databaseURL: configMaestra.dbUrl };
         try {
-            if (firebase.apps.length) firebase.app().delete().then(() => iniciarFirebase(config, config.projectId, config.apiKey));
-            else iniciarFirebase(config, config.projectId, config.apiKey);
+            if (firebase.apps.length) firebase.app().delete().then(() => iniciarFirebase(config));
+            else iniciarFirebase(config);
         } catch(e) { console.error(e); }
     }
 
-    function iniciarFirebase(config, projectId, apiKey) {
+    function iniciarFirebase(config) {
         firebase.initializeApp(config);
         db = firebase.database();
-        localStorage.setItem('beta_fb_config', JSON.stringify({projectId, apiKey}));
-        db.ref('.info/connected').on('value', snap => {
-            firebaseConnected = snap.val() === true;
-            document.getElementById('connectionStatus').textContent = firebaseConnected ? '🟢 Sincronizado' : '🔴 Local';
-            document.getElementById('connectionStatus').className = 'connection-status ' + (firebaseConnected ? 'online' : 'offline');
-            
-            // DISPARO DE SINCRONIZACIÓN INMEDIATA AL RECONECTAR
-            // Si acabamos de conectar, subimos lo que tenemos en LocalStorage para actualizar la nube
-            if(firebaseConnected) {
-                console.log('🔄 Reconexión detectada: Sincronizando datos locales con Firebase...');
-                sync(); 
+        const root = configMaestra.pathCliente;
+
+        db.ref(root + 'dispositivos/' + deviceId).set({ ultimaConexion: new Date().getTime(), nombre: navigator.userAgent.substring(0, 50) });
+        db.ref(root + 'dispositivos').on('value', snap => {
+            const dispositivos = snap.val() || {};
+            const listaIds = Object.keys(dispositivos);
+            if(listaIds.length > configMaestra.limiteDispositivos && !listaIds.includes(deviceId)) {
+                document.body.innerHTML = `<div style="padding:50px; text-align:center; font-family:sans-serif;">
+                    <h1 style="color:red;">🚫 Límite de Dispositivos Alcanzado</h1>
+                    <p>Este sistema está configurado para un máximo de <b>${configMaestra.limiteDispositivos}</b> dispositivos.</p>
+                    <p>Contacte al administrador para ampliar su plan.</p>
+                </div>`;
             }
         });
-        db.ref('viveres_beta/data').on('value', snap => {
+
+        db.ref('.info/connected').on('value', snap => {
+            firebaseConnected = snap.val() === true;
+            document.getElementById('connectionStatus').textContent = firebaseConnected ? '🟢 Online (' + configMaestra.version + ')' : '🔴 Local';
+            document.getElementById('connectionStatus').className = 'connection-status ' + (firebaseConnected ? 'online' : 'offline');
+            if(firebaseConnected) sync(); 
+        });
+
+        db.ref(root + 'data').on('value', snap => {
             const data = snap.val();
             if(data) {
-                items = data.items || []; ventas = data.ventas || []; creditos = data.creditos || []; 
+                items = data.items || []; ventas = data.ventas || []; creditos = data.creditos || [];
                 cierres = data.cierres || []; proveedores = data.proveedores || []; facturas = data.facturas || [];
-                clientes = data.clientes || [];
-                gastosOperativos = data.gastosOperativos || [];
-                tasaDolar = data.tasa || tasaDolar;
-                ivaPorcentaje = data.iva || ivaPorcentaje;
-                stockMinimoGlobal = data.stockMinGlobal || stockMinimoGlobal;
-                document.getElementById('ivaPorcentaje').value = ivaPorcentaje;
-                document.getElementById('stockMinimoGlobal').value = stockMinimoGlobal;
+                clientes = data.clientes || []; gastosOperativos = data.gastosOperativos || [];
+                tasaDolar = data.tasa || 36.50; ivaPorcentaje = data.iva || 16; stockMinimoGlobal = data.stockMinGlobal || 5;
                 render();
-            } else sync();
+            }
         });
     }
 
     function sync() {
-        // Actualizar variables desde el DOM antes de guardar
-        ivaPorcentaje = parseFloat(document.getElementById('ivaPorcentaje').value) || 0;
-        stockMinimoGlobal = parseFloat(document.getElementById('stockMinimoGlobal').value) || 5;
-        
-        // 1. Guardado en LocalStorage (Siempre, incluso offline)
         localStorage.setItem('beta_items', JSON.stringify(items));
         localStorage.setItem('beta_ventas', JSON.stringify(ventas));
         localStorage.setItem('beta_creditos', JSON.stringify(creditos));
@@ -851,10 +947,9 @@
         localStorage.setItem('beta_iva', ivaPorcentaje);
         localStorage.setItem('beta_stock_min_global', stockMinimoGlobal);
         
-        // 2. Sincronización con Firebase (Solo si hay conexión activa)
         if(firebaseConnected && db && navigator.onLine) {
             console.log('☁️ Subiendo cambios a Firebase...');
-            db.ref('viveres_beta/data').set({ 
+            db.ref(configMaestra.pathCliente + 'data').set({ 
                 items, ventas, creditos, cierres, proveedores, facturas, clientes, gastosOperativos,
                 tasa: tasaDolar, iva: ivaPorcentaje, stockMinGlobal: stockMinimoGlobal 
             }).then(() => {
@@ -1587,8 +1682,8 @@
         let totalGastosHoy = 0;
         gastosHoy.forEach(c => { totalGastosHoy += c.monto; });
         
-        console.log('Gastos del día (' + diaActual + '):', gastosHoy);
-        console.log('Total gastos:', totalGastosHoy);
+        const totalGastosHoyDisplay = document.getElementById('totalGastosHoyDisplay');
+        if(totalGastosHoyDisplay) totalGastosHoyDisplay.textContent = 'Bs. ' + fM(totalGastosHoy);
         
         const listaGastosElement = document.getElementById('listaGastosOperativos');
         if(listaGastosElement) {
