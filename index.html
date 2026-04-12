@@ -621,6 +621,14 @@
             <input type="text" id="devDbUrl" placeholder="https://tu-proyecto.firebaseio.com" onchange="guardarConfigMaestra()">
         </div>
 
+        <div class="section-header" style="margin-top:15px;">
+            <h4>🔐 Seguridad del Panel</h4>
+        </div>
+        <div class="input-group">
+            <label>Clave Maestra Personalizada:</label>
+            <input type="password" id="devClaveMaestra" placeholder="admin123" onchange="guardarConfigMaestra()">
+        </div>
+
         <div class="section-header" style="margin-top:15px; color:var(--danger);">
             <h4>⚠️ Mantenimiento Crítico</h4>
         </div>
@@ -836,7 +844,8 @@
         pathCliente: 'viveres_beta/',
         dbUrl: 'https://viveres-pruebas-default-rtdb.firebaseio.com',
         apiKey: 'AIzaSyB_I1xI7BS1ArpvkAOXiOYJ5ezZQiNKL7E',
-        projectId: 'viveres-pruebas'
+        projectId: 'viveres-pruebas',
+        claveMaestra: 'admin123'
     };
 
     let deviceId = localStorage.getItem('beta_device_id') || ('dev_' + Math.random().toString(36).substr(2, 9));
@@ -844,7 +853,8 @@
 
     function solicitarAccesoMaestro() {
         const clave = prompt("Introduce la Clave Maestra de Desarrollador:");
-        if(clave === "admin123") {
+        const claveCorrecta = configMaestra.claveMaestra || 'admin123';
+        if(clave === claveCorrecta) {
             abrirModalMaestro();
         } else {
             alert("Acceso denegado.");
@@ -856,6 +866,7 @@
         document.getElementById('devLimiteDispositivos').value = configMaestra.limiteDispositivos;
         document.getElementById('devPathCliente').value = configMaestra.pathCliente;
         document.getElementById('devDbUrl').value = configMaestra.dbUrl;
+        document.getElementById('devClaveMaestra').value = configMaestra.claveMaestra || 'admin123';
         document.getElementById('modalMaestro').classList.add('active');
     }
 
@@ -869,6 +880,8 @@
         configMaestra.limiteDispositivos = parseInt(document.getElementById('devLimiteDispositivos').value) || 2;
         configMaestra.pathCliente = document.getElementById('devPathCliente').value.trim() || 'viveres_beta/';
         configMaestra.dbUrl = document.getElementById('devDbUrl').value.trim();
+        configMaestra.claveMaestra = document.getElementById('devClaveMaestra').value.trim() || 'admin123';
+        
         if(configMaestra.dbUrl.includes("firebaseio.com")) {
             configMaestra.projectId = configMaestra.dbUrl.split('https://')[1].split('.firebaseio')[0].split('-default-rtdb')[0];
         }
