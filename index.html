@@ -171,7 +171,7 @@
 <body>
 
 <div class="app-card">
-    <div class="header-info" onclick="toggleConfig()">
+    <div class="header-info" onclick="solicitarAccesoGeneral()">
         <h2>📦 Control de Víveres - Pro Contable v2</h2>
         <p id="fechaActual"></p>
         <div style="display: flex; justify-content: center; gap: 10px; align-items: center;">
@@ -198,9 +198,9 @@
             <button class="btn-danger" onclick="toggleConfig()" style="width: 100%;">CERRAR</button>
         </div>
         <button class="btn-info" onclick="generarQR()" style="width:100%; margin-top:10px;">📱 MOSTRAR QR DE CONEXIÓN</button>
-        <button class="btn-vender" onclick="solicitarAccesoDueno()" style="width:100%; margin-top:10px; background:var(--primary);">👤 CONFIGURACIÓN DEL DUEÑO</button>
+        <button id="btnConfigDuenoMenu" class="btn-vender" onclick="abrirModalDueno()" style="width:100%; margin-top:10px; background:var(--primary); display:none;">👤 PERMISOS Y SEGURIDAD</button>
         <div id="qrcode"></div>
-        <div style="text-align:center; margin-top:20px; opacity:0.3; font-size:0.7rem;" onclick="solicitarAccesoMaestro()">⚙️ v2.5.0</div>
+        <div id="devVersionLabel" style="text-align:center; margin-top:20px; opacity:0.3; font-size:0.7rem; display:none;" onclick="abrirModalMaestro()">⚙️ v2.5.0</div>
     </div>
 
     <div class="tabs">
@@ -635,6 +635,20 @@
         </div>
         <button class="btn-danger" onclick="reinicioMaestroSistema()" style="width:100%; margin-bottom:10px;">🔥 REINICIAR TODA LA BASE DE DATOS</button>
         
+        
+        <div class="section-header" style="margin-top:15px;">
+            <h4>📱 Seguridad de este Dispositivo</h4>
+            <small style="color:#666;">ID: <span id="currentDeviceIdLabel"></span></small>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Modo "Solo Ventas" (No toca Stock)</span>
+            <label class="switch"><input type="checkbox" id="deviceSoloVenta" onchange="guardarConfigDispositivo()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Modo "Solo Consulta" (No vende ni toca Stock)</span>
+            <label class="switch"><input type="checkbox" id="deviceSoloConsulta" onchange="guardarConfigDispositivo()"><span class="slider"></span></label>
+        </div>
+
         <div class="btn-grid" style="margin-top:20px;">
             <button class="btn-add" onclick="cerrarModalMaestro()">GUARDAR Y SALIR</button>
         </div>
@@ -677,6 +691,20 @@
         <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
             <span>Gestionar Proveedores</span>
             <label class="switch"><input type="checkbox" id="permisoProveedores" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+
+        
+        <div class="section-header" style="margin-top:15px;">
+            <h4>📱 Seguridad de este Dispositivo</h4>
+            <small style="color:#666;">ID: <span id="currentDeviceIdLabel"></span></small>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Modo "Solo Ventas" (No toca Stock)</span>
+            <label class="switch"><input type="checkbox" id="deviceSoloVenta" onchange="guardarConfigDispositivo()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Modo "Solo Consulta" (No vende ni toca Stock)</span>
+            <label class="switch"><input type="checkbox" id="deviceSoloConsulta" onchange="guardarConfigDispositivo()"><span class="slider"></span></label>
         </div>
 
         <div class="btn-grid" style="margin-top:20px;">
@@ -858,7 +886,8 @@
         permisoVerCostos: true,
         permisoAnularVentas: true,
         permisoVerReportes: true,
-        permisoProveedores: true
+        permisoProveedores: true,
+        restriccionesDispositivos: {} // Guardará { deviceId: { soloVenta: true, soloConsulta: true } }
     };
 
         items = JSON.parse(localStorage.getItem('beta_items')) || [];
@@ -908,8 +937,7 @@
     localStorage.setItem('beta_device_id', deviceId);
 
 
-    function solicitarAccesoDueno() {
-        if(sesionDuenoActiva) { abrirModalDueno(); return; }
+    
         const clave = prompt("Introduce la Clave del Dueño:");
         if(clave === configDueno.clave) {
             sesionDuenoActiva = true;
@@ -920,6 +948,7 @@
         }
     }
 
+    
     function abrirModalDueno() {
         document.getElementById('duenoClave').value = configDueno.clave;
         document.getElementById('permisoInventario').checked = configDueno.permisoInventario;
@@ -927,8 +956,27 @@
         document.getElementById('permisoAnularVentas').checked = configDueno.permisoAnularVentas;
         document.getElementById('permisoVerReportes').checked = configDueno.permisoVerReportes;
         document.getElementById('permisoProveedores').checked = configDueno.permisoProveedores;
+        
+        // Cargar config de este dispositivo
+        document.getElementById('currentDeviceIdLabel').textContent = deviceId;
+        const res = configDueno.restriccionesDispositivos[deviceId] || { soloVenta: false, soloConsulta: false };
+        document.getElementById('deviceSoloVenta').checked = res.soloVenta;
+        document.getElementById('deviceSoloConsulta').checked = res.soloConsulta;
+
         document.getElementById('modalDueno').classList.add('active');
     }
+
+    function guardarConfigDispositivo() {
+        const soloVenta = document.getElementById('deviceSoloVenta').checked;
+        const soloConsulta = document.getElementById('deviceSoloConsulta').checked;
+        
+        if (!configDueno.restriccionesDispositivos) configDueno.restriccionesDispositivos = {};
+        configDueno.restriccionesDispositivos[deviceId] = { soloVenta, soloConsulta };
+        
+        localStorage.setItem('beta_dueno_config', JSON.stringify(configDueno));
+        render();
+    }
+
 
     function guardarConfigDueno() {
         configDueno.clave = document.getElementById('duenoClave').value.trim() || '1234';
@@ -952,8 +1000,7 @@
     }
 
 
-    function solicitarAccesoDueno() {
-        if(sesionDuenoActiva) { abrirModalDueno(); return; }
+    
         const clave = prompt("Introduce la Clave del Dueño:");
         if(clave === configDueno.clave) {
             sesionDuenoActiva = true;
@@ -964,6 +1011,7 @@
         }
     }
 
+    
     function abrirModalDueno() {
         document.getElementById('duenoClave').value = configDueno.clave;
         document.getElementById('permisoInventario').checked = configDueno.permisoInventario;
@@ -971,8 +1019,27 @@
         document.getElementById('permisoAnularVentas').checked = configDueno.permisoAnularVentas;
         document.getElementById('permisoVerReportes').checked = configDueno.permisoVerReportes;
         document.getElementById('permisoProveedores').checked = configDueno.permisoProveedores;
+        
+        // Cargar config de este dispositivo
+        document.getElementById('currentDeviceIdLabel').textContent = deviceId;
+        const res = configDueno.restriccionesDispositivos[deviceId] || { soloVenta: false, soloConsulta: false };
+        document.getElementById('deviceSoloVenta').checked = res.soloVenta;
+        document.getElementById('deviceSoloConsulta').checked = res.soloConsulta;
+
         document.getElementById('modalDueno').classList.add('active');
     }
+
+    function guardarConfigDispositivo() {
+        const soloVenta = document.getElementById('deviceSoloVenta').checked;
+        const soloConsulta = document.getElementById('deviceSoloConsulta').checked;
+        
+        if (!configDueno.restriccionesDispositivos) configDueno.restriccionesDispositivos = {};
+        configDueno.restriccionesDispositivos[deviceId] = { soloVenta, soloConsulta };
+        
+        localStorage.setItem('beta_dueno_config', JSON.stringify(configDueno));
+        render();
+    }
+
 
     function guardarConfigDueno() {
         configDueno.clave = document.getElementById('duenoClave').value.trim() || '1234';
@@ -995,13 +1062,35 @@
         alert("Sesión de Dueño cerrada. Modo Empleado activo.");
     }
 
-    function solicitarAccesoMaestro() {
-        const clave = prompt("Introduce la Clave Maestra de Desarrollador:");
-        const claveCorrecta = configMaestra.claveMaestra || 'admin123';
-        if(clave === claveCorrecta) {
-            abrirModalMaestro();
-        } else {
+     else {
             alert("Acceso denegado.");
+        }
+    }
+
+    
+    function solicitarAccesoGeneral() {
+        const clave = prompt("🔐 SEGURIDAD: Ingrese Clave de Acceso:");
+        if (!clave) return;
+
+        const claveMaestra = configMaestra.claveMaestra || 'admin123';
+        const claveDueno = configDueno.clave || '1234';
+
+        if (clave === claveMaestra) {
+            // Acceso Desarrollador: Muestra todo
+            sesionDuenoActiva = true;
+            document.getElementById('devVersionLabel').style.display = 'block';
+            document.getElementById('btnConfigDuenoMenu').style.display = 'block';
+            toggleConfig();
+            render();
+        } else if (clave === claveDueno) {
+            // Acceso Dueño: Muestra configuración general y botón de permisos
+            sesionDuenoActiva = true;
+            document.getElementById('devVersionLabel').style.display = 'none';
+            document.getElementById('btnConfigDuenoMenu').style.display = 'block';
+            toggleConfig();
+            render();
+        } else {
+            alert("❌ Acceso Denegado: Clave Incorrecta.");
         }
     }
 
@@ -1730,7 +1819,16 @@
     }
 
     function render() {
-        // --- BLOQUEOS POR VERSIÓN Y ROL ---
+                // --- BLOQUEOS POR VERSIÓN, ROL Y DISPOSITIVO ---
+        const version = configMaestra.version || 'BASICO';
+        const p = configDueno;
+        const esDueno = sesionDuenoActiva;
+        const resDisp = p.restriccionesDispositivos ? (p.restriccionesDispositivos[deviceId] || {}) : {};
+        
+        // Si el dispositivo es Solo Consulta o Solo Venta, se aplican restricciones extra si no es dueño
+        const esSoloVenta = !esDueno && resDisp.soloVenta;
+        const esSoloConsulta = !esDueno && resDisp.soloConsulta;
+
         const version = configMaestra.version || 'BASICO';
         const p = configDueno;
         const esDueno = sesionDuenoActiva;
@@ -1783,6 +1881,16 @@
             if(camInv) camInv.style.display = 'block';
             if(camVentas) camVentas.style.display = 'block';
             if(scanVentaInput) scanVentaInput.parentElement.style.display = 'block';
+        }
+
+        
+        // Bloqueo de Ventas si es Solo Consulta
+        const tabVentas = document.getElementById('tab-ventas');
+        if(esSoloConsulta) {
+            if(tabVentas) tabVentas.style.display = 'none';
+            if(tabActive === 'ventas') switchTab('inventario');
+        } else {
+            if(tabVentas) tabVentas.style.display = 'block';
         }
 
         // Actualizar la fecha actual en cada renderizado
@@ -2296,7 +2404,19 @@
     function cerrarModalCredito() { document.getElementById('modalCredito').classList.remove('active'); }
     function pagarCredito(idx) { if(confirm('¿Pagado?')) { creditos.splice(idx,1); sync(); render(); } }
     function limpiarCarrito() { if(confirm('¿Vaciar?')) { carrito = []; renderCarrito(); } }
-    function toggleConfig() { const s = document.getElementById('configSection'); s.style.display = s.style.display === 'none' ? 'block' : 'none'; }
+    function toggleConfig() {
+        const section = document.getElementById('configSection');
+        if (section.style.display === 'none') {
+            section.style.display = 'block';
+        } else {
+            section.style.display = 'none';
+            // Al cerrar, ocultamos los botones especiales por seguridad
+            document.getElementById('devVersionLabel').style.display = 'none';
+            document.getElementById('btnConfigDuenoMenu').style.display = 'none';
+            sesionDuenoActiva = false;
+            render();
+        }
+    }
     function generarQR() { const q = document.getElementById('qrcode'); q.innerHTML = ''; new QRCode(q, { text: window.location.href, width: 150, height: 150 }); }
     function descargarReporte() {
         let csv = "FECHA,TIPO,VENTAS_TOTAL,IVA,GANANCIA_NETA\n" + cierres.map(c => `${c.fecha},${c.tipo},${c.ingresos},${c.iva},${c.ganancia}`).join("\n");
