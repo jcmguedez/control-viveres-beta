@@ -9,8 +9,9 @@
     <meta name="apple-mobile-web-app-title" content="Control Víveres">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <link rel="icon" type="image/png" href="icon.png">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="iconpremiun.png">
+    <link rel="apple-touch-icon" href="iconpremiun.png">
+    <link rel="manifest" href="manifest.json">
     
     <title>Control de Víveres - Pro Contable v2</title>
     <style>
@@ -190,26 +191,82 @@
             <label>Stock Mínimo por Defecto</label>
             <input type="number" id="stockMinimoGlobal" value="5" onchange="sync()">
         </div>
-        <input type="text" id="projectId" placeholder="Project ID" style="margin-bottom:10px;">
-        <input type="password" id="apiKey" placeholder="API Key" style="margin-bottom:10px;">
         <div class="btn-grid">
-            <button class="btn-add" onclick="conectarFirebase()" style="width: 100%;">CONECTAR</button>
+            <button class="btn-add" onclick="conectarFirebase()" style="width: 100%;">RECONECTAR NUBE</button>
             <button class="btn-danger" onclick="toggleConfig()" style="width: 100%;">CERRAR</button>
         </div>
         <button class="btn-info" onclick="generarQR()" style="width:100%; margin-top:10px;">📱 MOSTRAR QR DE CONEXIÓN</button>
+        
+        <div class="section-header" style="margin-top:20px; border-bottom: 1px solid #ccc;">
+            <h4>🛡️ Permisos y Seguridad</h4>
+        </div>
+        
+        <div class="input-group">
+            <label>Nueva Clave Administrador:</label>
+            <input type="password" id="duenoClave" placeholder="1234" onchange="guardarConfigDueno()">
+        </div>
+
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Stock</span>
+            <label class="switch"><input type="checkbox" id="hideTabInventario" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Ventas</span>
+            <label class="switch"><input type="checkbox" id="hideTabVentas" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Créditos</span>
+            <label class="switch"><input type="checkbox" id="hideTabCreditos" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Proveedores</span>
+            <label class="switch"><input type="checkbox" id="hideTabProveedores" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Gastos</span>
+            <label class="switch"><input type="checkbox" id="hideTabGastos" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Ocultar Pestaña Reportes</span>
+            <label class="switch"><input type="checkbox" id="hideTabReportes" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+
+        <div class="section-header" style="margin-top:15px;">
+            <h4>🚫 Restricciones (Solo Lectura)</h4>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Bloquear Modificación Stock</span>
+            <label class="switch"><input type="checkbox" id="permisoInventario" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Bloquear Ver Costos</span>
+            <label class="switch"><input type="checkbox" id="permisoVerCostos" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+        <div class="switch-container" style="justify-content:space-between; margin-bottom:10px;">
+            <span>Bloquear Anulación Ventas</span>
+            <label class="switch"><input type="checkbox" id="permisoAnularVentas" onchange="guardarConfigDueno()"><span class="slider"></span></label>
+        </div>
+
+        <div class="input-group" style="margin-top:15px;">
+            <label>Versión Comprada:</label>
+            <input type="text" id="displayVersion" readonly style="background:#eee; color:#666;">
+        </div>
+
         <div id="qrcode"></div>
+        <div style="text-align:center; margin-top:20px; opacity:0.3; font-size:0.7rem;" onclick="solicitarAccesoMaestro()">⚙️ v2.5.1</div>
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('inventario')">📦 Stock</button>
-        <button class="tab-btn" onclick="switchTab('ventas')">🛒 Venta</button>
-        <button class="tab-btn" onclick="switchTab('creditos')">💳 Créditos</button>
-        <button class="tab-btn" onclick="switchTab('proveedores')">🏢 Proveedores</button>
-        <button class="tab-btn" onclick="switchTab('reportes')">📊 Reportes</button>
+        <button id="tab-inventario" class="tab-btn" onclick="switchTab('inventario')">📦 Stock</button>
+        <button id="tab-ventas" class="tab-btn" onclick="switchTab('ventas')">🛒 Venta</button>
+        <button id="tab-creditos" class="tab-btn" onclick="switchTab('creditos')">💳 Créditos</button>
+        <button id="tab-proveedores" class="tab-btn" onclick="switchTab('proveedores')">🏢 Prov.</button>
+        <button id="tab-gastos" class="tab-btn" onclick="switchTab('gastos')">💸 Gastos</button>
+        <button id="tab-reportes" class="tab-btn" onclick="switchTab('reportes')">📊 Rep.</button>
     </div>
 
     <!-- TAB: INVENTARIO -->
-    <div id="inventario" class="tab-content active">
+    <div id="inventario" class="tab-content">
         <div class="input-row" style="display:flex; gap:10px;">
             <div class="input-group" style="flex:1;">
                 <label>Tasa Dólar (BCV)</label>
@@ -230,7 +287,7 @@
             <label>Código de Barras (SKU)</label>
             <div class="camera-container">
                 <input type="text" id="codigoBarras" placeholder="Escanea o ingresa código..." class="search-input" style="margin-bottom: 0;">
-                <button class="btn-camera" onclick="toggleCameraInventario()">📷 ESCANEAR</button>
+                <button id="btn-camera-inventario" class="btn-camera" onclick="toggleCameraInventario()">📷 ESCANEAR</button>
             </div>
             <div id="qr-reader-inventario" style="display:none; margin-top:10px;"></div>
             <div class="qr-reader-status" id="qr-status-inventario"></div>
@@ -260,6 +317,8 @@
                 <select id="unidad">
                     <option value="UND">Unidad (UND)</option>
                     <option value="KG">Kilogramo (KG)</option>
+                    <option value="LIT">Líquido (LIQ)</option>
+                    <option value="PAQ">Paquete (PAQ)</option>
                 </select>
             </div>
             <div style="flex:1;">
@@ -296,8 +355,12 @@
     <div id="ventas" class="tab-content">
         <!-- BÚSQUEDA CON ESCANEO DE CÁMARA -->
         <div class="camera-container">
-            <input type="text" id="busquedaProducto" class="search-input" placeholder="🔍 Buscar producto o escanear código..." oninput="buscarVenta()" style="margin-bottom: 0;">
-            <button class="btn-camera" onclick="toggleCameraVentas()">📷 ESCANEAR</button>
+            <input type="text" id="busquedaProducto" class="search-input" placeholder="🔍 Buscar por nombre..." oninput="buscarVenta()" style="margin-bottom: 0;">
+            <button id="btn-camera-ventas" class="btn-camera" onclick="toggleCameraVentas()">📷 ESCANEAR</button>
+        </div>
+        <div class="input-group" style="margin-top: 10px;">
+            <label>Código de Barras (Escáner)</label>
+            <input type="text" id="codigoBarrasVenta" class="search-input" placeholder="Escanear o escribir código de barras..." onkeypress="if(event.key === 'Enter') buscarVentaPorCodigo(this.value)">
         </div>
         <div id="qr-reader-ventas" style="display:none; margin-top:10px;"></div>
         <div class="qr-reader-status" id="qr-status-ventas"></div>
@@ -436,7 +499,7 @@
             </div>
             <div style="flex:1;">
                 <label>Cantidad</label>
-                <input type="number" id="cantidadFactura" step="0.01" placeholder="1">
+                <input type="number" id="cantidadFactura" step="0.01" value="0">
             </div>
         </div>
         <div class="input-row-two">
@@ -446,7 +509,7 @@
             </div>
             <div>
                 <label>Stock Minimo</label>
-                <input type="number" id="stockMinimoFactura" placeholder="5" step="0.01" value="5" min="0">
+                <input type="number" id="stockMinimoFactura" placeholder="Stock Mín." step="0.01" min="0">
             </div>
         </div>
         <div class="input-group">
@@ -507,6 +570,30 @@
         </div>
     </div>
 
+    <!-- TAB: GASTOS -->
+    <div id="gastos" class="tab-content">
+        <h2>💰 Gestión de Gastos Operativos</h2>
+        <div class="stats-box" style="border-left-color: var(--danger); margin-bottom: 20px;">
+            <div class="stats-label">TOTAL GASTOS HOY</div>
+            <div class="stats-value" id="totalGastosHoyDisplay" style="color:var(--danger);">Bs. 0,00</div>
+        </div>
+
+        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1;">
+                <label>Concepto del Gasto</label>
+                <input type="text" id="conceptoGasto" placeholder="Ej: Alquiler, Luz, Sueldo..." class="search-input">
+            </div>
+            <div style="flex:1;">
+                <label>Monto (Bs.)</label>
+                <input type="number" id="montoGasto" placeholder="0.00" step="0.01" class="search-input">
+            </div>
+        </div>
+        <button class="btn-add" onclick="agregarGastoOperativo()" style="width:100%; margin-bottom:15px;">+ REGISTRAR GASTO</button>
+        
+        <h3>📋 Historial de Gastos (Hoy)</h3>
+        <div id="listaGastosOperativos" class="list-container" style="max-height:300px; overflow-y:auto; margin-bottom:15px;"></div>
+    </div>
+
     <!-- TAB: REPORTES -->
     <div id="reportes" class="tab-content">
         <h2>📊 Dashboard Control Diario</h2>
@@ -555,17 +642,94 @@
     </div>
 </div>
 
+<!-- MODAL MAESTRO DESARROLLADOR -->
+<div id="modalMaestro" class="modal">
+    <div class="modal-content" style="max-width:450px;">
+        <h3 style="color:var(--danger); border-bottom:2px solid var(--danger); padding-bottom:10px;">🛠️ PANEL MAESTRO (DEV)</h3>
+        
+        <div class="section-header" style="margin-top:15px;">
+            <h4>🚀 Configuración de Versión</h4>
+        </div>
+        <div class="input-group">
+            <label>Versión del Sistema:</label>
+            <select id="devVersion" onchange="guardarConfigMaestra()">
+                <option value="BASICO">Básico (2 Dispositivos)</option>
+                <option value="PRO">Pro (3 Dispositivos)</option>
+                <option value="PREMIUM">Premium (Ilimitado/Personalizado)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Límite Manual de Dispositivos:</label>
+            <input type="number" id="devLimiteDispositivos" onchange="guardarConfigMaestra()">
+        </div>
+
+        <div class="section-header" style="margin-top:15px;">
+            <h4>🔥 Conexión Firebase (Ruta Cliente)</h4>
+        </div>
+        <div class="input-group">
+            <label>Ruta Base del Cliente (Path):</label>
+            <input type="text" id="devPathCliente" placeholder="cliente_001/" onchange="guardarConfigMaestra()">
+        </div>
+        <div class="input-group">
+            <label>Database URL:</label>
+            <input type="text" id="devDbUrl" placeholder="https://tu-proyecto.firebaseio.com" onchange="guardarConfigMaestra()">
+        </div>
+        <div class="input-group">
+            <label>API Key (Web SDK):</label>
+            <input type="password" id="devApiKey" placeholder="AIzaSy..." onchange="guardarConfigMaestra()">
+        </div>
+
+        <div class="section-header" style="margin-top:15px;">
+            <h4>🔐 Seguridad del Panel</h4>
+        </div>
+        <div class="input-group">
+            <label>Clave Maestra Personalizada:</label>
+            <input type="password" id="devClaveMaestra" placeholder="admin123" onchange="guardarConfigMaestra()">
+        </div>
+
+        <div class="section-header" style="margin-top:15px; color:var(--primary);">
+            <h4>🚀 Generar Instalador para Cliente</h4>
+        </div>
+        <p style="font-size:0.75rem; color:#666; margin-bottom:10px;">Configura los datos arriba y presiona este botón para descargar un archivo index.html listo para enviar por WhatsApp al cliente.</p>
+        <button class="btn-add" onclick="generarArchivoCliente()" style="width:100%; margin-bottom:20px; background:#27ae60;">📥 DESCARGAR APP PARA CLIENTE</button>
+
+        <div class="section-header" style="margin-top:15px; color:var(--danger);">
+            <h4>⚠️ Mantenimiento Crítico</h4>
+        </div>
+        <button class="btn-danger" onclick="reinicioMaestroSistema()" style="width:100%; margin-bottom:10px;">🔥 REINICIAR TODA LA BASE DE DATOS</button>
+        
+        <div class="btn-grid" style="margin-top:20px;">
+            <button class="btn-add" onclick="cerrarModalMaestro()">GUARDAR Y SALIR</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONFIGURACIÓN DEL DUEÑO -->
+
+
 <!-- MODAL CRÉDITO -->
 <div id="modalCredito" class="modal">
-    <div class="modal-content">
-        <h3>💳 Registrar Crédito</h3>
-        <div class="input-group"><label>Nombre del Cliente:</label><input type="text" id="nombreCliente" placeholder="Ej: Juan Perez"></div>
-        <div class="stats-box">
-            <div class="stats-label">Monto a Deber:</div>
-            <div class="stats-value" id="montoCredito">Bs. 0,00</div>
+        <div class="modal-content">
+            <h3>💳 Registrar Crédito</h3>
+            <div class="input-group">
+                <label>Cédula del Cliente:</label>
+                <input type="text" id="cedulaCliente" placeholder="V-12345678" list="listaClientesSugeridos" onchange="buscarClientePorCedula(this.value)">
+                <datalist id="listaClientesSugeridos"></datalist>
+            </div>
+            <div class="input-group">
+                <label>Nombre Completo:</label>
+                <input type="text" id="nombreCliente" placeholder="Ej: Juan Perez">
+            </div>
+            <div class="input-group">
+                <label>Teléfono:</label>
+                <input type="tel" id="telefonoCliente" placeholder="0412-1234567">
+            </div>
+            <div class="stats-box">
+                <div class="stats-label">Monto a Deber:</div>
+                <div class="stats-value" id="montoCredito">Bs. 0,00</div>
+            </div>
+            <div class="btn-grid"><button class="btn-add" onclick="finalizarVenta(true)">CONFIRMAR</button><button class="btn-danger" onclick="cerrarModalCredito()">CANCELAR</button></div>
         </div>
-        <div class="btn-grid"><button class="btn-add" onclick="finalizarVenta(true)">CONFIRMAR</button><button class="btn-danger" onclick="cerrarModalCredito()">CANCELAR</button></div>
-    </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
@@ -631,9 +795,75 @@
         verificarLibrerias();
     }
     
-    let items = [], ventas = [], creditos = [], carrito = [], cierres = [], proveedores = [], facturas = [];
+    let items = [], ventas = [], creditos = [], carrito = [], cierres = [], proveedores = [], facturas = [], clientes = [], gastosOperativos = [];
     let carritoFacturaTemp = []; // Carrito temporal para productos de factura actual
     let tasaDolar = 36.50, diaActual = new Date().toLocaleDateString('es-ES'), ivaPorcentaje = 16, stockMinimoGlobal = 5;
+    
+    // Función para actualizar la fecha actual cada vez que se renderiza
+    function actualizarDiaActual() {
+        const hoy = new Date().toLocaleDateString('es-ES');
+        if(hoy !== diaActual) {
+            console.log('📅 Cambio de día detectado:', diaActual, '->', hoy);
+            diaActual = hoy;
+            // Detectar ventas pendientes de cierre cuando cambia el día
+            detectarVentasPendientes();
+        }
+        return diaActual;
+    }
+    
+    // Función para detectar ventas de días anteriores sin cerrar
+    function detectarVentasPendientes() {
+        const hoy = new Date().toLocaleDateString('es-ES');
+        const ventasAnteriores = ventas.filter(v => v.dia !== hoy && !v.anulada);
+        const diasPendientes = [...new Set(ventasAnteriores.map(v => v.dia))];
+        
+        if(diasPendientes.length > 0) {
+            console.log('⚠️ ALERTA: Ventas pendientes de cierre de días anteriores:', diasPendientes);
+            const mensaje = `Se detectaron ventas sin cerrar de ${diasPendientes.length} día(s) anterior(es):\n${diasPendientes.join(', ')}\n\n¿Deseas proceder a cerrar esos días ahora?`;
+            if(confirm(mensaje)) {
+                cerrarDiasAnteriores(diasPendientes);
+            }
+        }
+    }
+    
+    // Función para cerrar múltiples días anteriores
+    function cerrarDiasAnteriores(dias) {
+        dias.forEach(dia => {
+            const vDia = ventas.filter(v => v.dia === dia && !v.anulada);
+            if(vDia.length > 0) {
+                let ing = 0, gan = 0, iva = 0, costos = 0;
+                vDia.forEach(v => { ing += v.total; gan += v.ganancia; iva += (v.ivaMonto || 0); });
+                
+                const costosDelDia = gastosOperativos.filter(c => c.fecha === dia);
+                costosDelDia.forEach(c => { costos += c.monto; });
+                
+                const gananciaNeta = gan - costos;
+                
+                cierres.push({ 
+                    fecha: dia, 
+                    ingresos: ing, 
+                    iva: iva, 
+                    ganancia: gan,
+                    gastosOperativos: costos,
+                    gananciaNeta: gananciaNeta,
+                    tipo: 'DIARIO',
+                    cerradoAutomaticamente: true
+                });
+                
+                console.log('✅ Cierre automático registrado para', dia, '- Ganancia Neta: Bs.', fM(gananciaNeta));
+            }
+        });
+        
+        // Limpiar ventas y gastos de esos días
+        dias.forEach(dia => {
+            ventas = ventas.filter(v => v.dia !== dia);
+            gastosOperativos = gastosOperativos.filter(c => c.fecha !== dia);
+        });
+        
+        sync();
+        render();
+        alert('✅ Cierres retroactivos completados. Los datos han sido procesados correctamente.');
+    }
     let db = null, firebaseConnected = false, itemPendientePeso = null;
     let cameraInventarioActive = false, cameraVentasActive = false, cameraProveedoresActive = false;
     let html5QrcodeScanner = null;
@@ -641,13 +871,56 @@
 
     function fM(n) { return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
 
+    let sesionDuenoActiva = false;
+    let configDueno = JSON.parse(localStorage.getItem('beta_dueno_config')) || {
+        clave: '1234',
+        permisoInventario: true,
+        permisoVerCostos: true,
+        permisoAnularVentas: true,
+        permisoVerReportes: true,
+        permisoProveedores: true,
+        hideTabInventario: false,
+        hideTabVentas: false,
+        hideTabCreditos: false,
+        hideTabProveedores: false,
+        hideTabGastos: false,
+        hideTabReportes: false
+    };
+
     function init() {
+        // --- APLICAR CONFIGURACIÓN EMBEBIDA SI ES NUEVO ---
+        if (!localStorage.getItem('beta_dev_config')) {
+            localStorage.setItem('beta_dev_config', JSON.stringify(configMaestra));
+            console.log("🚀 Configuración inicial aplicada desde el instalador.");
+        }
+
+        // --- AUTO-CONFIGURACIÓN POR URL (Sincronización QR) ---
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('db') && urlParams.has('key')) {
+            configMaestra.dbUrl = urlParams.get('db');
+            configMaestra.apiKey = urlParams.get('key');
+            configMaestra.pathCliente = urlParams.get('path') || configMaestra.pathCliente;
+            configMaestra.version = urlParams.get('ver') || configMaestra.version;
+            
+            if(configMaestra.dbUrl.includes("firebaseio.com")) {
+                configMaestra.projectId = configMaestra.dbUrl.split('https://')[1].split('.firebaseio')[0].split('-default-rtdb')[0];
+            }
+            
+            localStorage.setItem('beta_dev_config', JSON.stringify(configMaestra));
+            console.log("✅ Configuración sincronizada por URL.");
+            
+            // Limpiar la URL para que no se vea la configuración
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         items = JSON.parse(localStorage.getItem('beta_items')) || [];
         ventas = JSON.parse(localStorage.getItem('beta_ventas')) || [];
         creditos = JSON.parse(localStorage.getItem('beta_creditos')) || [];
         cierres = JSON.parse(localStorage.getItem('beta_cierres')) || [];
         proveedores = JSON.parse(localStorage.getItem('beta_proveedores')) || [];
         facturas = JSON.parse(localStorage.getItem('beta_facturas')) || [];
+        clientes = JSON.parse(localStorage.getItem('beta_clientes')) || [];
+        gastosOperativos = JSON.parse(localStorage.getItem('beta_gastos_operativos')) || [];
         tasaDolar = parseFloat(localStorage.getItem('beta_tasa')) || 36.50;
         ivaPorcentaje = parseFloat(localStorage.getItem('beta_iva')) || 16;
         stockMinimoGlobal = parseFloat(localStorage.getItem('beta_stock_min_global')) || 5;
@@ -658,99 +931,212 @@
         document.getElementById('stockMinimo').value = stockMinimoGlobal;
         document.getElementById('fechaActual').textContent = diaActual;
         
-        const config = localStorage.getItem('beta_fb_config');
-        if(config) {
-            const c = JSON.parse(config);
-            document.getElementById('projectId').value = c.projectId;
-            document.getElementById('apiKey').value = c.apiKey;
-        } else {
-            document.getElementById('projectId').value = FIREBASE_CONFIG.projectId;
-            document.getElementById('apiKey').value = FIREBASE_CONFIG.apiKey;
-        }
-        
         conectarFirebase();
         render();
     }
 
-    // Credenciales de Firebase para Viveres-Pruebas
-    const FIREBASE_CONFIG = {
-        apiKey: "AIzaSyB_I1xI7BS1ArpvkAOXiOYJ5ezZQiNKL7E",
-        authDomain: "viveres-pruebas.firebaseapp.com",
-        databaseURL: "https://viveres-pruebas-default-rtdb.firebaseio.com",
-        projectId: "viveres-pruebas",
-        storageBucket: "viveres-pruebas.firebasestorage.app",
-        messagingSenderId: "1034847368340",
-        appId: "1:1034847368340:web:4584d1502544f33149f081"
+    // ============================================================
+    // 🛠️ CONFIGURACIÓN DE ENTREGA (HARDCODED PARA EL CLIENTE)
+    // ============================================================
+    // Modifica estos valores antes de enviar el archivo al cliente.
+    const CONFIG_ENTREGA = {
+        dbUrl: 'https://viveres-pruebas-default-rtdb.firebaseio.com', // URL de Firebase
+        apiKey: 'AIzaSyB_I1xI7BS1ArpvkAOXiOYJ5ezZQiNKL7E',           // API Key de Firebase
+        pathCliente: 'viveres_beta/',                                // Carpeta del cliente en la DB
+        version: 'BASICO',                                           // BASICO, PRO o PREMIUM
+        limiteDispositivos: 2,                                       // Cantidad de equipos permitidos
+        claveMaestra: 'admin123'                                     // Clave para el Panel Maestro
+    };
+    // ============================================================
+
+    // --- CONFIGURACIÓN MAESTRA Y LICENCIAMIENTO ---
+    let configMaestra = JSON.parse(localStorage.getItem('beta_dev_config')) || {
+        version: CONFIG_ENTREGA.version,
+        limiteDispositivos: CONFIG_ENTREGA.limiteDispositivos,
+        pathCliente: CONFIG_ENTREGA.pathCliente,
+        dbUrl: CONFIG_ENTREGA.dbUrl,
+        apiKey: CONFIG_ENTREGA.apiKey,
+        projectId: CONFIG_ENTREGA.dbUrl.includes("firebaseio.com") ? CONFIG_ENTREGA.dbUrl.split('https://')[1].split('.firebaseio')[0].split('-default-rtdb')[0] : '',
+        claveMaestra: CONFIG_ENTREGA.claveMaestra
     };
 
+    let deviceId = localStorage.getItem('beta_device_id') || ('dev_' + Math.random().toString(36).substr(2, 9));
+    localStorage.setItem('beta_device_id', deviceId);
+
+
+
+
+
+
+
+    function solicitarAccesoMaestro() {
+        const clave = prompt("Introduce la Clave Maestra de Desarrollador:");
+        const claveCorrecta = configMaestra.claveMaestra || 'admin123';
+        if(clave === claveCorrecta) {
+            abrirModalMaestro();
+        } else {
+            alert("Acceso denegado.");
+        }
+    }
+
+    function abrirModalMaestro() {
+        document.getElementById('devVersion').value = configMaestra.version;
+        document.getElementById('devLimiteDispositivos').value = configMaestra.limiteDispositivos;
+        document.getElementById('devPathCliente').value = configMaestra.pathCliente;
+        document.getElementById('devDbUrl').value = configMaestra.dbUrl || '';
+        document.getElementById('devApiKey').value = configMaestra.apiKey || '';
+        document.getElementById('devClaveMaestra').value = configMaestra.claveMaestra || 'admin123';
+        document.getElementById('modalMaestro').classList.add('active');
+    }
+
+    function cerrarModalMaestro() {
+        document.getElementById('modalMaestro').classList.remove('active');
+        location.reload();
+    }
+
+    function guardarConfigMaestra() {
+        configMaestra.version = document.getElementById('devVersion').value;
+        configMaestra.limiteDispositivos = parseInt(document.getElementById('devLimiteDispositivos').value) || 2;
+        configMaestra.pathCliente = document.getElementById('devPathCliente').value.trim() || 'viveres_beta/';
+        configMaestra.dbUrl = document.getElementById('devDbUrl').value.trim();
+        configMaestra.apiKey = document.getElementById('devApiKey').value.trim();
+        configMaestra.claveMaestra = document.getElementById('devClaveMaestra').value.trim() || 'admin123';
+        
+        if(configMaestra.dbUrl.includes("firebaseio.com")) {
+            configMaestra.projectId = configMaestra.dbUrl.split('https://')[1].split('.firebaseio')[0].split('-default-rtdb')[0];
+        }
+        localStorage.setItem('beta_dev_config', JSON.stringify(configMaestra));
+    }
+
+    function generarArchivoCliente() {
+        // 1. Obtener los datos actuales del panel
+        const version = document.getElementById('devVersion').value;
+        const limite = document.getElementById('devLimiteDispositivos').value;
+        const path = document.getElementById('devPathCliente').value.trim();
+        const dbUrl = document.getElementById('devDbUrl').value.trim();
+        const apiKey = document.getElementById('devApiKey').value.trim();
+        const claveM = document.getElementById('devClaveMaestra').value.trim();
+
+        if(!dbUrl || !apiKey || !path) {
+            alert("⚠️ Por favor, completa la URL de Firebase, la API Key y el Path del Cliente antes de generar.");
+            return;
+        }
+
+        // 2. Obtener el código fuente de la página actual
+        let htmlContent = document.documentElement.outerHTML;
+        htmlContent = "<!DOCTYPE html>\n" + htmlContent;
+
+        // 3. Inyectar la configuración en el bloque CONFIG_ENTREGA usando Regex
+        const regexConfig = /const CONFIG_ENTREGA = \{[\s\S]*?\};/;
+        const nuevaConfig = `const CONFIG_ENTREGA = {
+        dbUrl: '${dbUrl}',
+        apiKey: '${apiKey}',
+        pathCliente: '${path}',
+        version: '${version}',
+        limiteDispositivos: ${limite},
+        claveMaestra: '${claveM}'
+    };`;
+
+        htmlContent = htmlContent.replace(regexConfig, nuevaConfig);
+
+        // 4. Crear el archivo y descargarlo
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const nombreArchivo = `ControlViveres_${path.replace(/[^a-z0-9]/gi, '_')}.html`;
+        
+        a.href = url;
+        a.download = nombreArchivo;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        alert(`✅ ¡Listo! Se ha descargado el archivo: ${nombreArchivo}\n\nYa puedes enviarlo por WhatsApp a tu cliente.`);
+    }
+
+    function reinicioMaestroSistema() {
+        if(confirm("⚠️ ATENCIÓN: Se borrarán TODOS los datos de este cliente en la nube y local. ¿Continuar?")) {
+            if(confirm("¿Estás ABSOLUTAMENTE seguro?")) {
+                if(db) {
+                    db.ref(configMaestra.pathCliente).remove();
+                    localStorage.clear();
+                    alert("Sistema reiniciado.");
+                    location.reload();
+                }
+            }
+        }
+    }
+
     function conectarFirebase() {
-        const projectId = document.getElementById('projectId').value.trim();
-        const apiKey = document.getElementById('apiKey').value.trim();
+        if(typeof firebase === "undefined" || !navigator.onLine) { if(typeof render === "function") render(); return; }
         
-        // Si no hay valores en los inputs, usar la configuración predeterminada
-        const config = (projectId && apiKey) 
-            ? { apiKey, projectId, databaseURL: `https://${projectId}-default-rtdb.firebaseio.com` }
-            : FIREBASE_CONFIG;
-        
-        if(typeof firebase === "undefined" || !config.projectId || !config.apiKey || !navigator.onLine) { if(typeof render === "function") render(); return; }
+        // Si ya hay una app de firebase, recargamos para aplicar la nueva config
+        if (firebase.apps.length) {
+            location.reload();
+            return;
+        }
+
+        const config = { apiKey: configMaestra.apiKey, projectId: configMaestra.projectId, databaseURL: configMaestra.dbUrl };
         try {
-            if (firebase.apps.length) firebase.app().delete().then(() => iniciarFirebase(config, config.projectId, config.apiKey));
-            else iniciarFirebase(config, config.projectId, config.apiKey);
+            iniciarFirebase(config);
         } catch(e) { console.error(e); }
     }
 
-    function iniciarFirebase(config, projectId, apiKey) {
+    function iniciarFirebase(config) {
         firebase.initializeApp(config);
         db = firebase.database();
-        localStorage.setItem('beta_fb_config', JSON.stringify({projectId, apiKey}));
-        db.ref('.info/connected').on('value', snap => {
-            firebaseConnected = snap.val() === true;
-            document.getElementById('connectionStatus').textContent = firebaseConnected ? '🟢 Sincronizado' : '🔴 Local';
-            document.getElementById('connectionStatus').className = 'connection-status ' + (firebaseConnected ? 'online' : 'offline');
-            
-            // DISPARO DE SINCRONIZACIÓN INMEDIATA AL RECONECTAR
-            // Si acabamos de conectar, subimos lo que tenemos en LocalStorage para actualizar la nube
-            if(firebaseConnected) {
-                console.log('🔄 Reconexión detectada: Sincronizando datos locales con Firebase...');
-                sync(); 
+        const root = configMaestra.pathCliente;
+
+        db.ref(root + 'dispositivos/' + deviceId).set({ ultimaConexion: new Date().getTime(), nombre: navigator.userAgent.substring(0, 50) });
+        db.ref(root + 'dispositivos').on('value', snap => {
+            const dispositivos = snap.val() || {};
+            const listaIds = Object.keys(dispositivos);
+            if(listaIds.length > configMaestra.limiteDispositivos && !listaIds.includes(deviceId)) {
+                document.body.innerHTML = `<div style="padding:50px; text-align:center; font-family:sans-serif;">
+                    <h1 style="color:red;">🚫 Límite de Dispositivos Alcanzado</h1>
+                    <p>Este sistema está configurado para un máximo de <b>${configMaestra.limiteDispositivos}</b> dispositivos.</p>
+                    <p>Contacte al administrador para ampliar su plan.</p>
+                </div>`;
             }
         });
-        db.ref('viveres_beta/data').on('value', snap => {
+
+        db.ref('.info/connected').on('value', snap => {
+            firebaseConnected = snap.val() === true;
+            document.getElementById('connectionStatus').textContent = firebaseConnected ? '🟢 Online (' + configMaestra.version + ')' : '🔴 Local';
+            document.getElementById('connectionStatus').className = 'connection-status ' + (firebaseConnected ? 'online' : 'offline');
+            if(firebaseConnected) sync(); 
+        });
+
+        db.ref(root + 'data').on('value', snap => {
             const data = snap.val();
             if(data) {
-                items = data.items || []; ventas = data.ventas || []; creditos = data.creditos || []; 
+                items = data.items || []; ventas = data.ventas || []; creditos = data.creditos || [];
                 cierres = data.cierres || []; proveedores = data.proveedores || []; facturas = data.facturas || [];
-                tasaDolar = data.tasa || tasaDolar;
-                ivaPorcentaje = data.iva || ivaPorcentaje;
-                stockMinimoGlobal = data.stockMinGlobal || stockMinimoGlobal;
-                document.getElementById('ivaPorcentaje').value = ivaPorcentaje;
-                document.getElementById('stockMinimoGlobal').value = stockMinimoGlobal;
+                clientes = data.clientes || []; gastosOperativos = data.gastosOperativos || [];
+                tasaDolar = data.tasa || 36.50; ivaPorcentaje = data.iva || 16; stockMinimoGlobal = data.stockMinGlobal || 5;
                 render();
-            } else sync();
+            }
         });
     }
 
     function sync() {
-        // Actualizar variables desde el DOM antes de guardar
-        ivaPorcentaje = parseFloat(document.getElementById('ivaPorcentaje').value) || 0;
-        stockMinimoGlobal = parseFloat(document.getElementById('stockMinimoGlobal').value) || 5;
-        
-        // 1. Guardado en LocalStorage (Siempre, incluso offline)
         localStorage.setItem('beta_items', JSON.stringify(items));
         localStorage.setItem('beta_ventas', JSON.stringify(ventas));
         localStorage.setItem('beta_creditos', JSON.stringify(creditos));
         localStorage.setItem('beta_cierres', JSON.stringify(cierres));
         localStorage.setItem('beta_proveedores', JSON.stringify(proveedores));
         localStorage.setItem('beta_facturas', JSON.stringify(facturas));
+        localStorage.setItem('beta_clientes', JSON.stringify(clientes));
+        localStorage.setItem('beta_gastos_operativos', JSON.stringify(gastosOperativos));
         localStorage.setItem('beta_tasa', tasaDolar);
         localStorage.setItem('beta_iva', ivaPorcentaje);
         localStorage.setItem('beta_stock_min_global', stockMinimoGlobal);
         
-        // 2. Sincronización con Firebase (Solo si hay conexión activa)
         if(firebaseConnected && db && navigator.onLine) {
             console.log('☁️ Subiendo cambios a Firebase...');
-            db.ref('viveres_beta/data').set({ 
-                items, ventas, creditos, cierres, proveedores, facturas, 
+            db.ref(configMaestra.pathCliente + 'data').set({ 
+                items, ventas, creditos, cierres, proveedores, facturas, clientes, gastosOperativos,
                 tasa: tasaDolar, iva: ivaPorcentaje, stockMinGlobal: stockMinimoGlobal 
             }).then(() => {
                 console.log('✅ Sincronización exitosa');
@@ -763,6 +1149,12 @@
     }
 
     function switchTab(tab) {
+        const version = configMaestra.version || 'BASICO';
+        if((version === 'BASICO' || version === 'PRO') && (tab === 'proveedores' || tab === 'gastos')) {
+            alert("Este módulo no está disponible en su versión actual.");
+            return;
+        }
+
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tab).classList.add('active');
@@ -1211,10 +1603,13 @@
     }
 
     function onScanSuccessVentas(decodedText) {
-        document.getElementById('busquedaProducto').value = decodedText;
+        // Poner el código en la casilla específica
+        document.getElementById('codigoBarrasVenta').value = decodedText;
         document.getElementById('qr-status-ventas').textContent = '✓ Código detectado: ' + decodedText;
         
-        // Buscar por SKU (prioridad) o por nombre
+        console.log('📱 Escáner activado - Código:', decodedText);
+        
+        // Buscar por SKU y añadir directamente
         buscarVentaPorCodigo(decodedText);
         
         // Cerrar cámara automáticamente después de detectar
@@ -1226,16 +1621,27 @@
     }
 
     function buscarVentaPorCodigo(codigo) {
-        // Búsqueda prioritaria: si es numérico de 7-13 dígitos, buscar por codigoBarras
-        if(/^\d{7,13}$/.test(codigo)) {
-            const producto = items.find(i => i.codigoBarras === codigo && i.cantidad > 0);
-            if(producto) {
+        if(!codigo) return;
+        
+        // Buscar el producto por código de barras
+        const producto = items.find(i => i.codigoBarras === codigo);
+        
+        if(producto) {
+            if(producto.cantidad > 0) {
+                console.log('✅ Producto encontrado por código:', producto.nombre);
                 prepararAddCarrito(producto.id);
-                return;
+                // Limpiar la casilla después de añadir con éxito
+                document.getElementById('codigoBarrasVenta').value = '';
+            } else {
+                console.warn('❌ Producto agotado:', producto.nombre);
+                alert('⚠️ El producto "' + producto.nombre + '" está AGOTADO.');
             }
+        } else {
+            // Si no se encuentra por código de barras, avisar y NO pasar a búsqueda por nombre automáticamente
+            // para evitar confusiones en la casilla de búsqueda textual.
+            console.warn('⚠️ Código de barras no registrado:', codigo);
+            alert('El código "' + codigo + '" no coincide con ningún producto registrado.');
         }
-        // Si no encuentra por SKU, buscar por nombre
-        buscarVenta();
     }
 
     function addItem() {
@@ -1353,12 +1759,95 @@
     }
 
     function render() {
+        // --- BLOQUEOS POR VERSIÓN Y PERMISOS ---
+        const version = configMaestra.version || 'BASICO';
+        const p = configDueno;
+        
+        // Control de Visibilidad de Pestañas
+        const tabs = {
+            'tab-inventario': p.hideTabInventario,
+            'tab-ventas': p.hideTabVentas,
+            'tab-creditos': p.hideTabCreditos,
+            'tab-proveedores': p.hideTabProveedores || (version !== 'PREMIUM'),
+            'tab-gastos': p.hideTabGastos || (version !== 'PREMIUM'),
+            'tab-reportes': p.hideTabReportes
+        };
+
+        for (const [id, hidden] of Object.entries(tabs)) {
+            const el = document.getElementById(id);
+            if(el) el.style.display = hidden ? 'none' : 'block';
+        }
+
+        // --- CORRECCIÓN: Si la pestaña activa está oculta, activar la primera visible ---
+        const tabContentActivo = document.querySelector('.tab-content.active');
+        const tabBtnActivo = document.querySelector('.tab-btn.active');
+        const tabBtnActivoId = tabBtnActivo ? tabBtnActivo.id : null;
+        const tabActivaOculta = tabBtnActivoId ? tabs[tabBtnActivoId] : true;
+
+        if(!tabContentActivo || tabActivaOculta) {
+            // Buscar la primera pestaña visible y activarla
+            const ordenTabs = ['inventario', 'ventas', 'creditos', 'proveedores', 'gastos', 'reportes'];
+            for (const tabId of ordenTabs) {
+                const btnId = 'tab-' + tabId;
+                const esOculta = tabs[btnId];
+                if (!esOculta) {
+                    // Desactivar todo
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    // Activar la primera visible
+                    const contenido = document.getElementById(tabId);
+                    const boton = document.getElementById(btnId);
+                    if(contenido) contenido.classList.add('active');
+                    if(boton) boton.classList.add('active');
+                    break;
+                }
+            }
+        }
+
+        // Bloqueos de Acción (Solo Lectura)
+        // Inventario
+        const formInv = document.querySelector('#inventario h2#formTitle');
+        const inputsInv = document.querySelectorAll('#inventario input, #inventario select, #inventario button.btn-add');
+        if(!p.permisoInventario) {
+            if(formInv) formInv.style.display = 'none';
+            inputsInv.forEach(el => { 
+                if(el.id !== 'filtroStock' && el.id !== 'tasa' && el.id !== 'stockMinimo') el.style.display = 'none'; 
+            });
+            // Ocultar botones de editar/eliminar en la lista (se maneja en el map de la lista)
+        } else {
+            if(formInv) formInv.style.display = 'block';
+            inputsInv.forEach(el => el.style.display = '');
+        }
+
+        // Control de Escáner (Cámara)
+        const camInv = document.getElementById('btn-camera-inventario');
+        const camVentas = document.getElementById('btn-camera-ventas');
+        const scanVentaInput = document.getElementById('codigoBarrasVenta');
+        
+        if(version === 'BASICO') {
+            if(camInv) camInv.style.display = 'none';
+            if(camVentas) camVentas.style.display = 'none';
+            if(scanVentaInput) scanVentaInput.parentElement.style.display = 'none';
+        } else {
+            if(camInv) camInv.style.display = 'block';
+            if(camVentas) camVentas.style.display = 'block';
+            if(scanVentaInput) scanVentaInput.parentElement.style.display = 'block';
+        }
+
+        // Actualizar la fecha actual en cada renderizado
+        const diaHoyActual = new Date().toLocaleDateString('es-ES');
+        if(diaHoyActual !== diaActual) {
+            console.log('📅 Cambio de día detectado en render:', diaActual, '->', diaHoyActual);
+            diaActual = diaHoyActual;
+        }
+        actualizarDiaActual();
         const lista = document.getElementById('lista');
         const filtro = document.getElementById('filtroStock').value.toLowerCase();
         let totalInv = 0;
         lista.innerHTML = items.filter(i => i.nombre.toLowerCase().includes(filtro)).map(i => {
             const pVBs = i.precioVenta * tasaDolar;
             totalInv += (i.precioVenta * i.cantidad * tasaDolar);
+            const verCostos = sesionDuenoActiva || configDueno.permisoVerCostos;
             const unit = i.unidad || 'UND';
             const displayQty = unit === 'KG' ? i.cantidad.toFixed(3) + ' Kg' : i.cantidad;
             const sMin = i.stockMin !== undefined ? i.stockMin : stockMinimoGlobal;
@@ -1369,7 +1858,7 @@
                 </div>
                 <div style="font-size:0.9rem; font-weight:bold;">Bs. ${fM(pVBs)} <small>/${unit}</small></div>
                 <div class="price-dual">$ ${fM(i.precioVenta)} /${unit}</div>
-                <div class="item-actions"><button class="btn-edit" onclick="editarItem(${i.id})">✏️</button><button class="btn-delete" onclick="eliminarItem(${i.id})">🗑️</button></div>
+                <div class="item-actions" style="${p.permisoInventario ? '' : 'display:none;'}"><button class="btn-edit" onclick="editarItem(${i.id})">✏️</button><button class="btn-delete" onclick="eliminarItem(${i.id})">🗑️</button></div>
             </div>`;
         }).join('');
         document.getElementById('totalDisplay').textContent = 'Bs. ' + fM(totalInv);
@@ -1380,7 +1869,12 @@
 
         renderCarrito();
         renderProveedores();
-        const vHoy = ventas.filter(v => v.dia === diaActual);
+        
+        // Actualizar totales diarios considerando gastos
+        const diaHoy = new Date().toLocaleDateString('es-ES');
+        const vHoy = ventas.filter(v => v.dia === diaHoy);
+        const vPendientes = ventas.filter(v => v.dia !== diaHoy);
+        
         let ing = 0, gan = 0, ivaRec = 0;
         vHoy.forEach(v => { 
             if(!v.anulada) { 
@@ -1391,28 +1885,121 @@
         });
         document.getElementById('ingresosTotales').textContent = 'Bs. ' + fM(ing);
         document.getElementById('ivaRecaudado').textContent = 'Bs. ' + fM(ivaRec);
-        document.getElementById('gananciaEstimada').textContent = 'Bs. ' + fM(gan);
+        const costosDelDia = gastosOperativos.filter(c => c.fecha === diaHoy).reduce((sum, c) => sum + c.monto, 0);
+        const gananciaNeta = gan - costosDelDia;
+        document.getElementById('gananciaEstimada').textContent = 'Bs. ' + fM(gananciaNeta);
         
-        document.getElementById('ventasHistorial').innerHTML = vHoy.reverse().map(v => `
-            <div class="item ${v.anulada ? 'anulada' : ''}">
-                <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)} ${v.ivaMonto > 0 ? '(Inc. IVA)' : ''} (${v.hora})
-                ${!v.anulada ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : '<b>[ANULADA]</b>'}
-            </div>`).join('');
-        document.getElementById('listaCreditos').innerHTML = creditos.map((c, idx) => `<div class="item"><b>${c.cliente}</b>: Bs. ${fM(c.monto)}<br><small>${c.detalle}</small><br><button onclick="pagarCredito(${idx})" style="background:var(--primary); padding:5px; margin-top:5px; font-size:0.7rem;">PAGADO</button></div>`).join('') || 'Sin deudas';
-        document.getElementById('historialCierres').innerHTML = cierres.slice().reverse().map(c => `<div class="item cierre-item"><b>${c.tipo}: ${c.fecha}</b><br>Ventas: Bs. ${fM(c.ingresos)}<br>IVA: Bs. ${fM(c.iva || 0)}<br>Ganancia: Bs. ${fM(c.ganancia)}</div>`).join('') || 'No hay cierres';
+        const ventasHistorialElement = document.getElementById('ventasHistorial');
+        if(ventasHistorialElement) {
+            const htmlVHoy = vHoy.length > 0 ? vHoy.slice().reverse().map(v => `
+                <div class="item ${v.anulada ? 'anulada' : ''}">
+                    <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)} (${v.hora})
+                    <small style="color:var(--primary); font-weight:bold;">Ganancia: Bs. ${fM(v.ganancia)}</small>
+                    ${!v.anulada ? (p.permisoAnularVentas ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : "") : "<b>[ANULADA]</b>"}
+                </div>`).join('') : '<p style="text-align:center; color:#999;">Sin ventas hoy</p>';
+
+            const htmlVPendientes = vPendientes.length > 0 ? `
+                <div style="background:#fff3cd; padding:10px; border-radius:10px; margin-bottom:15px; border:1px solid #ffeeba;">
+                    <h3 style="margin:0 0 10px 0; font-size:0.9rem; color:#856404;">⚠️ VENTAS PENDIENTES DE CIERRE</h3>
+                    ${vPendientes.slice().reverse().map(v => `
+                        <div class="item ${v.anulada ? 'anulada' : ''}" style="background:white; margin-bottom:5px; border-left-color:#ffc107;">
+                            <small>${v.dia}</small> <b>${v.producto}</b><br>Total: Bs. ${fM(v.total)}
+                            ${!v.anulada ? `<br><button class="btn-anular" onclick="anularVenta(${v.id})">ANULAR VENTA</button>` : ''}
+                        </div>`).join('')}
+                    <button class="btn-vender" onclick="cerrarDia()" style="width:100%; margin-top:5px; background:#ffc107; color:#000;">CERRAR DÍAS PENDIENTES</button>
+                </div>` : '';
+
+            ventasHistorialElement.innerHTML = htmlVPendientes + htmlVHoy;
+        } else {
+            console.error('❌ Elemento ventasHistorial no encontrado');
+        }
+        const agrupados = {};
+        creditos.forEach((cr, idx) => {
+            const key = cr.cedula || cr.cliente;
+            if(!agrupados[key]) agrupados[key] = { nombre: cr.cliente, cedula: cr.cedula, total: 0, items: [] };
+            agrupados[key].total += cr.monto;
+            agrupados[key].items.push({ ...cr, idx });
+        });
+
+        let htmlCreditos = "";
+        for(let k in agrupados) {
+            const g = agrupados[k];
+            const cli = clientes.find(c => c.cedula === g.cedula);
+            htmlCreditos += `<div class="item" style="border-left-color:var(--danger);">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <b style="font-size:1rem;">${g.nombre}</b> ${g.cedula ? '<br><small>V-'+g.cedula+'</small>' : ''}
+                        ${cli && cli.telefono ? '<br><small>📞 '+cli.telefono+'</small>' : ''}
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="color:var(--danger); font-weight:bold; font-size:1.1rem;">Bs. ${fM(g.total)}</span>
+                        ${g.cedula ? `<br><button onclick="eliminarCliente('${g.cedula}')" style="background:none; color:var(--danger); border:none; padding:0; font-size:0.65rem; cursor:pointer;">Eliminar Cliente</button>` : ''}
+                    </div>
+                </div>
+                <div style="margin-top:10px; background:#fff; border-radius:5px; padding:5px;">
+                    ${g.items.map(it => `<div style="font-size:0.75rem; border-bottom:1px solid #eee; padding:5px 0; display:flex; justify-content:space-between; align-items:center;">
+                        <span>${it.fecha}: ${it.detalle} (Bs. ${fM(it.monto)})</span>
+                        <button onclick="pagarCredito(${it.idx})" style="background:var(--primary); color:white; border:none; padding:2px 5px; border-radius:3px; font-size:0.6rem; cursor:pointer;">PAGAR</button>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }
+        document.getElementById('listaCreditos').innerHTML = htmlCreditos || '<p style="text-align:center; color:#999; padding:20px;">Sin deudas pendientes</p>';
+        // Renderizar gastos operativos del día
+        const gastosHoy = gastosOperativos.filter(c => c.fecha === diaActual);
+        let totalGastosHoy = 0;
+        gastosHoy.forEach(c => { totalGastosHoy += c.monto; });
+        
+        const totalGastosHoyDisplay = document.getElementById('totalGastosHoyDisplay');
+        if(totalGastosHoyDisplay) totalGastosHoyDisplay.textContent = 'Bs. ' + fM(totalGastosHoy);
+        
+        const listaGastosElement = document.getElementById('listaGastosOperativos');
+        if(listaGastosElement) {
+            listaGastosElement.innerHTML = gastosHoy.length > 0 ? gastosHoy.map(c => `
+                <div class="item" style="border-left-color: var(--warning); display:flex; justify-content:space-between; align-items:center; padding:10px;">
+                    <div>
+                        <b>${c.concepto}</b><br>
+                        <small style="color:#666;">Bs. ${fM(c.monto)}</small>
+                    </div>
+                    <button onclick="eliminarGastoOperativo(${c.id})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:0.7rem; white-space:nowrap;">ELIMINAR</button>
+                </div>
+            `).join('') : '<p style="text-align:center; color:#999; padding:10px;">Sin gastos registrados</p>';
+        }
+        
+        document.getElementById('historialCierres').innerHTML = cierres.slice().reverse().map(c => `
+            <div class="item cierre-item">
+                <b>${c.tipo}: ${c.fecha}</b><br>
+                Ventas: Bs. ${fM(c.ingresos)}<br>
+                IVA: Bs. ${fM(c.iva || 0)}<br>
+                Ganancia Bruta: Bs. ${fM(c.ganancia)}
+                ${c.gastosOperativos ? `<br><span style="color:var(--warning);">Costos: Bs. ${fM(c.gastosOperativos)}</span>` : ''}
+                ${c.gananciaNeta ? `<br><span style="color:var(--primary); font-weight:bold;">Ganancia Neta: Bs. ${fM(c.gananciaNeta)}</span>` : ''}
+            </div>
+        `).join('') || 'No hay cierres';
     }
 
     function buscarVenta() {
         const q = document.getElementById('busquedaProducto').value.toLowerCase();
         const res = document.getElementById('searchResults');
         if(!q) return res.innerHTML = '';
-        res.innerHTML = items.filter(i => i.nombre.toLowerCase().includes(q) && i.cantidad > 0).map(i => `
+        
+        const resultados = items.filter(i => i.nombre.toLowerCase().includes(q) && i.cantidad > 0);
+        console.log('🔍 Búsqueda de texto:', q, '- Resultados:', resultados.length);
+        
+        res.innerHTML = resultados.map(i => `
             <div class="search-result-item" onclick="prepararAddCarrito(${i.id})"><div><b>${i.nombre}</b> ${i.exento ? '<span class="exento-badge">EXENTO</span>' : ''}<br><small>Bs. ${fM(i.precioVenta * tasaDolar)} /${i.unidad || 'UND'}</small></div><button class="btn-add-search">AÑADIR</button></div>
         `).join('');
     }
 
     function prepararAddCarrito(id) {
         const i = items.find(x => x.id === id);
+        if(!i) {
+            alert('Producto no encontrado');
+            return;
+        }
+        
+        console.log('🛒 Preparando para añadir al carrito:', i.nombre);
+        
         if(i.unidad === 'KG') {
             itemPendientePeso = i;
             document.getElementById('pesoProductoNombre').textContent = i.nombre + " (Bs. " + fM(i.precioVenta * tasaDolar) + "/Kg)";
@@ -1423,7 +2010,9 @@
                 const p = parseFloat(document.getElementById('pesoInput').value) || 0;
                 document.getElementById('pesoPreview').textContent = 'Total: Bs. ' + fM(p * i.precioVenta * tasaDolar);
             };
-        } else addCarrito(id, 1);
+        } else {
+            addCarrito(id, 1);
+        }
     }
 
     function confirmarPeso() {
@@ -1438,9 +2027,23 @@
 
     function addCarrito(id, cant) {
         const i = items.find(x => x.id === id);
+        if(!i) {
+            alert('Producto no encontrado');
+            return;
+        }
+        
         const ex = carrito.find(x => x.id === id && x.unidad !== 'KG');
-        if(ex && i.unidad !== 'KG') { if(ex.q + cant <= i.cantidad) ex.q += cant; else alert('Sin stock'); }
-        else carrito.push({ ...i, q: cant });
+        if(ex && i.unidad !== 'KG') { 
+            if(ex.q + cant <= i.cantidad) {
+                ex.q += cant;
+                console.log('✏️ Cantidad actualizada:', i.nombre, '- Nueva cantidad:', ex.q);
+            } else {
+                alert('Sin stock suficiente');
+            }
+        } else {
+            carrito.push({ ...i, q: cant });
+            console.log('✅ Producto añadido al carrito:', i.nombre, '- Cantidad:', cant);
+        }
         renderCarrito();
     }
 
@@ -1494,8 +2097,20 @@
     }
 
     function finalizarVenta(esCredito) {
-        const cliente = document.getElementById('nombreCliente').value.trim();
-        if(esCredito && !cliente) return alert('Escribe el nombre');
+        if(!carrito.length) return alert('Carrito vacío');
+        
+        let clienteNombre = "", clienteCedula = "", clienteTelefono = "";
+        if(esCredito) {
+            clienteNombre = document.getElementById('nombreCliente').value.trim();
+            clienteCedula = document.getElementById('cedulaCliente').value.trim();
+            clienteTelefono = document.getElementById('telefonoCliente').value.trim();
+            if(!clienteNombre || !clienteCedula) return alert('Nombre y Cédula son obligatorios');
+            
+            const idx = clientes.findIndex(c => c.cedula === clienteCedula);
+            if(idx === -1) clientes.push({ id: Date.now(), nombre: clienteNombre, cedula: clienteCedula, telefono: clienteTelefono });
+            else { clientes[idx].nombre = clienteNombre; clientes[idx].telefono = clienteTelefono; }
+        }
+
         let subGravV = 0, subExentoV = 0, ganV = 0, det = "";
         const conIVA = document.getElementById('aplicarIVA').checked;
         
@@ -1503,12 +2118,23 @@
             const subItem = c.precioVenta * c.q * tasaDolar;
             if(c.exento) subExentoV += subItem; else subGravV += subItem;
             ganV += (c.precioVenta - c.costo) * c.q * tasaDolar;
-            det += `${c.unidad === 'KG' ? c.q.toFixed(3)+'Kg' : c.q} ${c.nombre}, `;
-            items.find(x => x.id === c.id).cantidad -= c.q;
+            det += `${c.unidad === 'KG' ? parseFloat(c.q).toFixed(3)+'Kg' : c.q} ${c.nombre}, `;
         });
         
         const ivaMonto = conIVA ? (subGravV * (ivaPorcentaje / 100)) : 0;
         const totalV = subGravV + subExentoV + ivaMonto;
+
+        if(totalV <= 0) return alert('El monto de la venta debe ser mayor a 0');
+
+        // Descontar stock solo al confirmar éxito
+        carrito.forEach(c => {
+            const item = items.find(x => x.id === c.id);
+            if(item) item.cantidad -= c.q;
+        });
+        
+        // Asegurar que diaActual está actualizado ANTES de guardar
+        const diaParaGuardar = new Date().toLocaleDateString('es-ES');
+        console.log('💾 Guardando venta con fecha:', diaParaGuardar);
         
         ventas.push({ 
             id: Date.now(), 
@@ -1518,14 +2144,35 @@
             ivaMonto: ivaMonto,
             total: totalV, 
             ganancia: ganV, 
-            dia: diaActual, 
+            dia: diaParaGuardar, 
             hora: new Date().toLocaleTimeString(), 
             tipo: esCredito?'credito':'contado', 
             anulada: false 
         });
         
-        if(esCredito) creditos.push({ cliente, monto: totalV, detalle: det.slice(0,-2), fecha: diaActual });
-        carrito = []; cerrarModalCredito(); sync(); render(); alert('Venta guardada');
+        if(esCredito) {
+            creditos.push({ 
+                id: Date.now(),
+                cliente: clienteNombre, 
+                cedula: clienteCedula,
+                monto: totalV, 
+                detalle: det.slice(0,-2), 
+                fecha: diaParaGuardar,
+                pagado: false
+            });
+        }
+        
+        carrito = []; 
+        document.getElementById('nombreCliente').value = '';
+        document.getElementById('cedulaCliente').value = '';
+        document.getElementById('telefonoCliente').value = '';
+        document.getElementById('busquedaProducto').value = '';
+        document.getElementById('searchResults').innerHTML = '';
+        cerrarModalCredito(); 
+        
+        sync(); 
+        render(); 
+        alert('Venta guardada con éxito');
     }
 
     function anularVenta(id) {
@@ -1548,36 +2195,231 @@
         }
     }
 
+    function agregarGastoOperativo() {
+        const conceptoInput = document.getElementById('conceptoGasto');
+        const montoInput = document.getElementById('montoGasto');
+        const concepto = conceptoInput.value.trim();
+        const monto = parseFloat(montoInput.value);
+        
+        if(!concepto) {
+            alert('Ingresa el concepto del gasto');
+            conceptoInput.focus();
+            return;
+        }
+        if(isNaN(monto) || monto <= 0) {
+            alert('Ingresa un monto válido');
+            montoInput.focus();
+            return;
+        }
+        
+        const nuevoGasto = {
+            id: Date.now(),
+            concepto: concepto,
+            monto: monto,
+            fecha: diaActual
+        };
+        
+        gastosOperativos.push(nuevoGasto);
+        console.log('💰 Gasto agregado:', nuevoGasto);
+        console.log('Total gastos hoy:', gastosOperativos.filter(g => g.fecha === diaActual));
+        
+        conceptoInput.value = '';
+        montoInput.value = '';
+        
+        sync();
+        render();
+        
+        alert(`Gasto registrado: Bs. ${fM(monto)}`);
+    }
+    
+    function eliminarGastoOperativo(id) {
+        const gasto = gastosOperativos.find(g => g.id === id);
+        if(confirm(`¿Eliminar gasto: ${gasto.concepto} (Bs. ${fM(gasto.monto)})? `)) {
+            gastosOperativos = gastosOperativos.filter(c => c.id !== id);
+            console.log('💰 Gasto eliminado. Total:', gastosOperativos.filter(g => g.fecha === diaActual));
+            sync();
+            render();
+        }
+    }
+
     function cerrarDia() {
-        const vHoy = ventas.filter(v => v.dia === diaActual && !v.anulada);
-        if(!vHoy.length) return alert('No hay ventas hoy');
-        if(confirm('¿Cerrar caja? Se guardarán los totales de ventas, IVA y ganancias.')) {
-            let ing = 0, gan = 0, iva = 0;
+        const diaHoyParaCierre = new Date().toLocaleDateString('es-ES');
+        
+        // Primero, detectar si hay ventas de días anteriores sin cerrar
+        const ventasAnteriores = ventas.filter(v => v.dia !== diaHoyParaCierre && !v.anulada);
+        if(ventasAnteriores.length > 0) {
+            const diasPendientes = [...new Set(ventasAnteriores.map(v => v.dia))];
+            const mensaje = `⚠️ AVISO: Hay ventas pendientes de cierre de ${diasPendientes.length} día(s):\n${diasPendientes.join(', ')}\n\n¿Deseas cerrar esos días primero?`;
+            if(confirm(mensaje)) {
+                cerrarDiasAnteriores(diasPendientes);
+                return; // Salir para que el usuario cierre primero los días anteriores
+            }
+        }
+        
+        const vHoy = ventas.filter(v => v.dia === diaHoyParaCierre && !v.anulada);
+        if(!vHoy.length) return alert('No hay ventas para cerrar hoy');
+        
+        console.log('🔐 Cerrando caja para el día:', diaHoyParaCierre, '- Ventas:', vHoy.length);
+        if(confirm('¿Cerrar caja? Se guardarán los totales de ventas, IVA, ganancias y costos operativos.')) {
+            let ing = 0, gan = 0, iva = 0, costos = 0;
             vHoy.forEach(v => { ing += v.total; gan += v.ganancia; iva += (v.ivaMonto || 0); });
-            cierres.push({ fecha: diaActual, ingresos: ing, iva: iva, ganancia: gan, tipo: 'DIARIO' });
-            ventas = ventas.filter(v => v.dia !== diaActual);
-            sync(); render(); alert('Caja cerrada y archivada.');
+            
+            // Sumar costos operativos del día
+            const costosHoy = gastosOperativos.filter(c => c.fecha === diaHoyParaCierre);
+            costosHoy.forEach(c => { costos += c.monto; });
+            
+            const gananciaNeta = gan - costos;
+            cierres.push({ 
+                fecha: diaHoyParaCierre, 
+                ingresos: ing, 
+                iva: iva, 
+                ganancia: gan,
+                gastosOperativos: costos,
+                gananciaNeta: gananciaNeta,
+                tipo: 'DIARIO' 
+            });
+            
+            ventas = ventas.filter(v => v.dia !== diaHoyParaCierre);
+            gastosOperativos = gastosOperativos.filter(c => c.fecha !== diaHoyParaCierre);
+            sync(); 
+            render(); 
+            alert(`Caja cerrada.\nGanancia Bruta: Bs. ${fM(gan)}\nCostos: Bs. ${fM(costos)}\nGanancia Neta: Bs. ${fM(gananciaNeta)}`);
         }
     }
 
     function cerrarMes() {
         if(confirm('¿Realizar cierre mensual? Se agruparán los cierres diarios.')) {
-            let ing = 0, gan = 0, iva = 0;
+            let ing = 0, gan = 0, iva = 0, costos = 0, gananciaNeta = 0;
             const cierresDiarios = cierres.filter(c => c.tipo === 'DIARIO');
-            cierresDiarios.forEach(c => { ing += c.ingresos; gan += c.ganancia; iva += (c.iva || 0); });
+            cierresDiarios.forEach(c => { 
+                ing += c.ingresos; 
+                gan += c.ganancia; 
+                iva += (c.iva || 0);
+                costos += (c.gastosOperativos || 0);
+                gananciaNeta += (c.gananciaNeta || c.ganancia);
+            });
             const mesAnio = diaActual.split('/')[1] + '/' + diaActual.split('/')[2];
             cierres = cierres.filter(c => c.tipo !== 'DIARIO');
-            cierres.push({ fecha: 'MES ' + mesAnio, ingresos: ing, iva: iva, ganancia: gan, tipo: 'MENSUAL' });
-            sync(); render(); alert('Cierre mensual completado.');
+            cierres.push({ 
+                fecha: 'MES ' + mesAnio, 
+                ingresos: ing, 
+                iva: iva, 
+                ganancia: gan,
+                gastosOperativos: costos,
+                gananciaNeta: gananciaNeta,
+                tipo: 'MENSUAL' 
+            });
+            sync(); 
+            render(); 
+            alert(`Cierre Mensual Completado\nIngresos: Bs. ${fM(ing)}\nGanancia Bruta: Bs. ${fM(gan)}\nGastos Operativos: Bs. ${fM(costos)}\nGanancia Neta: Bs. ${fM(gananciaNeta)}`);
         }
     }
 
-    function abrirModalCredito() { if(carrito.length) { document.getElementById('montoCredito').textContent = document.getElementById('totalCarrito').textContent; document.getElementById('modalCredito').classList.add('active'); } }
+    function abrirModalCredito() { 
+        if(!carrito.length) return alert('Carrito vacío');
+        
+        const datalist = document.getElementById('listaClientesSugeridos');
+        if(datalist) {
+            datalist.innerHTML = clientes.map(c => `<option value="${c.cedula}">${c.nombre}</option>`).join('');
+        }
+        
+        document.getElementById('montoCredito').textContent = document.getElementById('totalCarrito').textContent; 
+        document.getElementById('modalCredito').classList.add('active'); 
+        document.getElementById('cedulaCliente').focus();
+    }
+    
+    function buscarClientePorCedula(cedula) {
+        const c = clientes.find(x => x.cedula === cedula);
+        if(c) {
+            document.getElementById('nombreCliente').value = c.nombre;
+            document.getElementById('telefonoCliente').value = c.telefono || '';
+        }
+    }
+
+    function eliminarCliente(cedula) {
+        if(confirm('¿Eliminar cliente y sus datos de contacto? (No elimina deudas existentes)')) {
+            clientes = clientes.filter(c => c.cedula !== cedula);
+            sync(); render();
+        }
+    }
     function cerrarModalCredito() { document.getElementById('modalCredito').classList.remove('active'); }
     function pagarCredito(idx) { if(confirm('¿Pagado?')) { creditos.splice(idx,1); sync(); render(); } }
     function limpiarCarrito() { if(confirm('¿Vaciar?')) { carrito = []; renderCarrito(); } }
-    function toggleConfig() { const s = document.getElementById('configSection'); s.style.display = s.style.display === 'none' ? 'block' : 'none'; }
-    function generarQR() { const q = document.getElementById('qrcode'); q.innerHTML = ''; new QRCode(q, { text: window.location.href, width: 150, height: 150 }); }
+    function toggleConfig() { 
+        const s = document.getElementById('configSection'); 
+        if(s.style.display === 'none' || s.style.display === '') {
+            const clave = prompt("Introduce la Clave de Administrador:");
+            const claveAdmin = configDueno.clave || '1234';
+            const claveDev = configMaestra.claveMaestra || 'admin123';
+            
+            if(clave === claveAdmin || clave === claveDev) {
+                s.style.display = 'block';
+                cargarValoresConfig();
+            } else if(clave !== null) {
+                alert("Clave incorrecta.");
+            }
+        } else {
+            s.style.display = 'none';
+        }
+    }
+
+    function cargarValoresConfig() {
+        document.getElementById('duenoClave').value = configDueno.clave;
+        document.getElementById('permisoInventario').checked = !configDueno.permisoInventario;
+        document.getElementById('permisoVerCostos').checked = !configDueno.permisoVerCostos;
+        document.getElementById('permisoAnularVentas').checked = !configDueno.permisoAnularVentas;
+        
+        document.getElementById('hideTabInventario').checked = configDueno.hideTabInventario;
+        document.getElementById('hideTabVentas').checked = configDueno.hideTabVentas;
+        document.getElementById('hideTabCreditos').checked = configDueno.hideTabCreditos;
+        document.getElementById('hideTabProveedores').checked = configDueno.hideTabProveedores;
+        document.getElementById('hideTabGastos').checked = configDueno.hideTabGastos;
+        document.getElementById('hideTabReportes').checked = configDueno.hideTabReportes;
+        
+        document.getElementById('displayVersion').value = configMaestra.version || 'BASICO';
+    }
+
+    function guardarConfigDueno() {
+        configDueno.clave = document.getElementById('duenoClave').value.trim() || '1234';
+        configDueno.permisoInventario = !document.getElementById('permisoInventario').checked;
+        configDueno.permisoVerCostos = !document.getElementById('permisoVerCostos').checked;
+        configDueno.permisoAnularVentas = !document.getElementById('permisoAnularVentas').checked;
+        
+        configDueno.hideTabInventario = document.getElementById('hideTabInventario').checked;
+        configDueno.hideTabVentas = document.getElementById('hideTabVentas').checked;
+        configDueno.hideTabCreditos = document.getElementById('hideTabCreditos').checked;
+        configDueno.hideTabProveedores = document.getElementById('hideTabProveedores').checked;
+        configDueno.hideTabGastos = document.getElementById('hideTabGastos').checked;
+        configDueno.hideTabReportes = document.getElementById('hideTabReportes').checked;
+        
+        localStorage.setItem('beta_dueno_config', JSON.stringify(configDueno));
+        render();
+    }
+    function generarQR() { 
+        const q = document.getElementById('qrcode'); 
+        q.innerHTML = ''; 
+        
+        // Crear URL con parámetros de configuración para replicación automática
+        const baseUrl = window.location.href.split('?')[0];
+        const params = new URLSearchParams();
+        params.set('db', configMaestra.dbUrl);
+        params.set('key', configMaestra.apiKey);
+        params.set('path', configMaestra.pathCliente);
+        params.set('ver', configMaestra.version);
+        
+        const syncUrl = `${baseUrl}?${params.toString()}`;
+        
+        new QRCode(q, { 
+            text: syncUrl, 
+            width: 180, 
+            height: 180,
+            colorDark : "#2c3e50",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        }); 
+        
+        console.log("📱 QR de sincronización generado con éxito.");
+    }
     function descargarReporte() {
         let csv = "FECHA,TIPO,VENTAS_TOTAL,IVA,GANANCIA_NETA\n" + cierres.map(c => `${c.fecha},${c.tipo},${c.ingresos},${c.iva},${c.ganancia}`).join("\n");
         const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `reporte_contable.csv`; a.click();
@@ -1668,20 +2510,28 @@
     }
 
     function anadirProductoFactura() {
-        const proveedorId = document.getElementById('proveedorFactura').value;
-        const nroFactura = document.getElementById('nroFactura').value;
+        const f_prov = document.getElementById('proveedorFactura');
+        const f_nro = document.getElementById('nroFactura');
+        const f_prod = document.getElementById('productoFactura');
+        const f_costo = document.getElementById('costoUnitarioFactura');
+        const f_cant = document.getElementById('cantidadFactura');
+        
+        if(!f_prov.value) { alert('Selecciona un proveedor'); document.getElementById('proveedorFilterInput').focus(); return; }
+        if(!f_nro.value) { alert('Ingresa el número de factura'); f_nro.focus(); return; }
+        if(!f_prod.value) { alert('Ingresa el nombre del producto'); f_prod.focus(); return; }
+        if(!f_costo.value || isNaN(parseFloat(f_costo.value))) { alert('Ingresa el costo'); f_costo.focus(); return; }
+        if(!f_cant.value || parseFloat(f_cant.value) <= 0) { alert('Ingresa una cantidad válida'); f_cant.focus(); return; }
+
+        const proveedorId = f_prov.value;
+        const nroFactura = f_nro.value;
         const sku = document.getElementById('skuFactura').value;
-        const producto = document.getElementById('productoFactura').value;
-        let costoUnitario = parseFloat(document.getElementById('costoUnitarioFactura').value);
+        const producto = f_prod.value;
+        let costoUnitario = parseFloat(f_costo.value);
         const moneda = document.getElementById('monedaCostoFactura').value;
-        const cantidad = parseFloat(document.getElementById('cantidadFactura').value);
+        const cantidad = parseFloat(f_cant.value);
         const aplicarIva = document.getElementById('ivaFactura').checked;
         const beneficio = parseFloat(document.getElementById('beneficioFactura').value) || 30;
-        const stockMinimo = parseFloat(document.getElementById('stockMinimoFactura').value) || 5;
-        
-        if(!proveedorId || !nroFactura || !producto || isNaN(costoUnitario) || isNaN(cantidad)) {
-            return alert('Datos incompletos');
-        }
+        const stockMinimo = parseFloat(document.getElementById('stockMinimoFactura').value) || stockMinimoGlobal;
 
         // Convertir a dólares para el almacenamiento interno (si está en Bs)
         const costoUSD = moneda === 'BS' ? costoUnitario / tasaDolar : costoUnitario;
@@ -1714,7 +2564,7 @@
         document.getElementById('skuFactura').value = '';
         document.getElementById('productoFactura').value = '';
         document.getElementById('costoUnitarioFactura').value = '';
-        document.getElementById('cantidadFactura').value = '1';
+        document.getElementById('cantidadFactura').value = '0';
         document.getElementById('ivaFactura').checked = true;
         document.getElementById('totalFacturaPreview').textContent = 'Bs. 0,00';
         document.getElementById('skuFactura').focus();
@@ -1832,9 +2682,9 @@
         document.getElementById('productoFactura').value = '';
         document.getElementById('costoUnitarioFactura').value = '';
         document.getElementById('monedaCostoFactura').value = 'BS';
-        document.getElementById('cantidadFactura').value = '1';
+        document.getElementById('cantidadFactura').value = '0';
         document.getElementById('beneficioFactura').value = '30';
-        document.getElementById('stockMinimoFactura').value = '5';
+        document.getElementById('stockMinimoFactura').value = stockMinimoGlobal;
         document.getElementById('ivaFactura').checked = true;
         document.getElementById('totalFacturaPreview').textContent = 'Bs. 0,00';
         document.getElementById('searchResultsFactura').innerHTML = '';
