@@ -687,11 +687,35 @@
             <input type="password" id="devClaveMaestra" placeholder="admin123" onchange="guardarConfigMaestra()">
         </div>
 
+         <div class="section-header" style="margin-top:15px;">
+            <h4>🏢 Datos Fiscales del Cliente</h4>
+        </div>
+        <div class="input-group">
+            <label>Nombre del Negocio:</label>
+            <input type="text" id="devNombreNegocio" placeholder="Ej: Inverteca" onchange="guardarConfigMaestra()">
+        </div>
+        <div class="input-group">
+            <label>RIF:</label>
+            <input type="text" id="devRifNegocio" placeholder="Ej: J-29399552-3" onchange="guardarConfigMaestra()">
+        </div>
+        <div class="input-group">
+            <label>Dirección:</label>
+            <input type="text" id="devDireccionNegocio" placeholder="Ej: Ave la ballenita Maracay" onchange="guardarConfigMaestra()">
+        </div>
+        <div class="input-group">
+            <label>Teléfono:</label>
+            <input type="text" id="devTelefonoNegocio" placeholder="Ej: 0424 3595310" onchange="guardarConfigMaestra()">
+        </div>
+        <div class="input-group">
+            <label>Última Factura Emitida:</label>
+            <input type="number" id="devUltimaFactura" placeholder="Ej: 654" onchange="guardarConfigMaestra()">
+        </div>
+
         <div class="section-header" style="margin-top:15px; color:var(--primary);">
             <h4>🚀 Generar Instalador para Cliente</h4>
         </div>
         <p style="font-size:0.75rem; color:#666; margin-bottom:10px;">Configura los datos arriba y presiona este botón para descargar un archivo index.html listo para enviar por WhatsApp al cliente.</p>
-        <button class="btn-add" onclick="generarArchivoCliente()" style="width:100%; margin-bottom:20px; background:#27ae60;">📥 DESCARGAR APP PARA CLIENTE</button>
+        <button class="btn-add" onclick="guardarConfigMaestra(); generarArchivoCliente();" style="width:100%; margin-bottom:20px; background:#27ae60;">📥 DESCARGAR APP PARA CLIENTE</button>PARA CLIENTE</button>
 
         <div class="section-header" style="margin-top:15px; color:var(--danger);">
             <h4>⚠️ Mantenimiento Crítico</h4>
@@ -940,12 +964,17 @@
     // ============================================================
     // Modifica estos valores antes de enviar el archivo al cliente.
     const CONFIG_ENTREGA = {
-        dbUrl: 'https://viveres-pruebas-default-rtdb.firebaseio.com', // URL de Firebase
-        apiKey: 'AIzaSyB_I1xI7BS1ArpvkAOXiOYJ5ezZQiNKL7E',           // API Key de Firebase
-        pathCliente: 'viveres_beta/',                                // Carpeta del cliente en la DB
-        version: 'BASICO',                                           // BASICO, PRO o PREMIUM
-        limiteDispositivos: 2,                                       // Cantidad de equipos permitidos
-        claveMaestra: 'admin123'                                     // Clave para el Panel Maestro
+        dbUrl: 'https://viveres-pruebas-default-rtdb.firebaseio.com',
+        apiKey: 'AIzaSyB_I1xI7BS1ArpvkAOXiOYJ5ezZQiNKL7E',
+        pathCliente: 'viveres_beta/',
+        version: 'BASICO',
+        limiteDispositivos: 2,
+        claveMaestra: 'admin123',
+        nombreNegocio: '',
+        rifNegocio: '',
+        direccionNegocio: '',
+        telefonoNegocio: '',
+        ultimaFactura: 0
     };
     // ============================================================
 
@@ -957,7 +986,12 @@
         dbUrl: CONFIG_ENTREGA.dbUrl,
         apiKey: CONFIG_ENTREGA.apiKey,
         projectId: CONFIG_ENTREGA.dbUrl.includes("firebaseio.com") ? CONFIG_ENTREGA.dbUrl.split('https://')[1].split('.firebaseio')[0].split('-default-rtdb')[0] : '',
-        claveMaestra: CONFIG_ENTREGA.claveMaestra
+        claveMaestra: CONFIG_ENTREGA.claveMaestra,
+        nombreNegocio: CONFIG_ENTREGA.nombreNegocio,
+        rifNegocio: CONFIG_ENTREGA.rifNegocio,
+        direccionNegocio: CONFIG_ENTREGA.direccionNegocio,
+        telefonoNegocio: CONFIG_ENTREGA.telefonoNegocio,
+        ultimaFactura: CONFIG_ENTREGA.ultimaFactura
     };
 
     let deviceId = localStorage.getItem('beta_device_id') || ('dev_' + Math.random().toString(36).substr(2, 9));
@@ -986,6 +1020,14 @@
         document.getElementById('devDbUrl').value = configMaestra.dbUrl || '';
         document.getElementById('devApiKey').value = configMaestra.apiKey || '';
         document.getElementById('devClaveMaestra').value = configMaestra.claveMaestra || 'admin123';
+        
+        // Datos Fiscales
+        document.getElementById('devNombreNegocio').value = configMaestra.nombreNegocio || '';
+        document.getElementById('devRifNegocio').value = configMaestra.rifNegocio || '';
+        document.getElementById('devDireccionNegocio').value = configMaestra.direccionNegocio || '';
+        document.getElementById('devTelefonoNegocio').value = configMaestra.telefonoNegocio || '';
+        document.getElementById('devUltimaFactura').value = configMaestra.ultimaFactura || 0;
+
         document.getElementById('modalMaestro').classList.add('active');
     }
 
@@ -1002,6 +1044,13 @@
         configMaestra.apiKey = document.getElementById('devApiKey').value.trim();
         configMaestra.claveMaestra = document.getElementById('devClaveMaestra').value.trim() || 'admin123';
         
+        // Datos Fiscales
+        configMaestra.nombreNegocio = document.getElementById('devNombreNegocio').value.trim();
+        configMaestra.rifNegocio = document.getElementById('devRifNegocio').value.trim();
+        configMaestra.direccionNegocio = document.getElementById('devDireccionNegocio').value.trim();
+        configMaestra.telefonoNegocio = document.getElementById('devTelefonoNegocio').value.trim();
+        configMaestra.ultimaFactura = parseInt(document.getElementById('devUltimaFactura').value) || 0;
+
         if(configMaestra.dbUrl.includes("firebaseio.com")) {
             configMaestra.projectId = configMaestra.dbUrl.split('https://')[1].split('.firebaseio')[0].split('-default-rtdb')[0];
         }
@@ -1016,6 +1065,12 @@
         const dbUrl = document.getElementById('devDbUrl').value.trim();
         const apiKey = document.getElementById('devApiKey').value.trim();
         const claveM = document.getElementById('devClaveMaestra').value.trim();
+        
+        const nombreN = document.getElementById('devNombreNegocio').value.trim();
+        const rifN = document.getElementById('devRifNegocio').value.trim();
+        const dirN = document.getElementById('devDireccionNegocio').value.trim();
+        const telN = document.getElementById('devTelefonoNegocio').value.trim();
+        const ultF = document.getElementById('devUltimaFactura').value || 0;
 
         if(!dbUrl || !apiKey || !path) {
             alert("⚠️ Por favor, completa la URL de Firebase, la API Key y el Path del Cliente antes de generar.");
@@ -1034,7 +1089,12 @@
         pathCliente: '${path}',
         version: '${version}',
         limiteDispositivos: ${limite},
-        claveMaestra: '${claveM}'
+        claveMaestra: '${claveM}',
+        nombreNegocio: '${nombreN}',
+        rifNegocio: '${rifN}',
+        direccionNegocio: '${dirN}',
+        telefonoNegocio: '${telN}',
+        ultimaFactura: ${ultF}
     };`;
 
         htmlContent = htmlContent.replace(regexConfig, nuevaConfig);
@@ -1791,6 +1851,12 @@
     }
 
     function render() {
+        // --- ACTUALIZAR NOMBRE DEL NEGOCIO ---
+        const nombreN = configMaestra.nombreNegocio || 'Control de Víveres - Pro Contable v2';
+        const h2Header = document.querySelector('.header-info h2');
+        if(h2Header) h2Header.textContent = '📦 ' + nombreN;
+        document.title = nombreN;
+
         // --- BLOQUEOS POR VERSIÓN Y PERMISOS ---
         const version = configMaestra.version || 'BASICO';
         const p = configDueno;
