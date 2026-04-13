@@ -191,10 +191,8 @@
             <label>Stock Mínimo por Defecto</label>
             <input type="number" id="stockMinimoGlobal" value="5" onchange="sync()">
         </div>
-        <input type="text" id="projectId" placeholder="Project ID" style="margin-bottom:10px;">
-        <input type="password" id="apiKey" placeholder="API Key" style="margin-bottom:10px;">
         <div class="btn-grid">
-            <button class="btn-add" onclick="conectarFirebase()" style="width: 100%;">CONECTAR</button>
+            <button class="btn-add" onclick="conectarFirebase()" style="width: 100%;">RECONECTAR NUBE</button>
             <button class="btn-danger" onclick="toggleConfig()" style="width: 100%;">CERRAR</button>
         </div>
         <button class="btn-info" onclick="generarQR()" style="width:100%; margin-top:10px;">📱 MOSTRAR QR DE CONEXIÓN</button>
@@ -676,6 +674,10 @@
             <label>Database URL:</label>
             <input type="text" id="devDbUrl" placeholder="https://tu-proyecto.firebaseio.com" onchange="guardarConfigMaestra()">
         </div>
+        <div class="input-group">
+            <label>API Key (Web SDK):</label>
+            <input type="password" id="devApiKey" placeholder="AIzaSy..." onchange="guardarConfigMaestra()">
+        </div>
 
         <div class="section-header" style="margin-top:15px;">
             <h4>🔐 Seguridad del Panel</h4>
@@ -684,6 +686,12 @@
             <label>Clave Maestra Personalizada:</label>
             <input type="password" id="devClaveMaestra" placeholder="admin123" onchange="guardarConfigMaestra()">
         </div>
+
+        <div class="section-header" style="margin-top:15px; color:var(--primary);">
+            <h4>🚀 Generar Instalador para Cliente</h4>
+        </div>
+        <p style="font-size:0.75rem; color:#666; margin-bottom:10px;">Configura los datos arriba y presiona este botón para descargar un archivo index.html listo para enviar por WhatsApp al cliente.</p>
+        <button class="btn-add" onclick="generarArchivoCliente()" style="width:100%; margin-bottom:20px; background:#27ae60;">📥 DESCARGAR APP PARA CLIENTE</button>
 
         <div class="section-header" style="margin-top:15px; color:var(--danger);">
             <h4>⚠️ Mantenimiento Crítico</h4>
@@ -880,6 +888,30 @@
     };
 
     function init() {
+        // --- APLICAR CONFIGURACIÓN EMBEBIDA SI ES NUEVO ---
+        if (!localStorage.getItem('beta_dev_config')) {
+            localStorage.setItem('beta_dev_config', JSON.stringify(configMaestra));
+            console.log("🚀 Configuración inicial aplicada desde el instalador.");
+        }
+
+        // --- AUTO-CONFIGURACIÓN POR URL (Sincronización QR) ---
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('db') && urlParams.has('key')) {
+            configMaestra.dbUrl = urlParams.get('db');
+            configMaestra.apiKey = urlParams.get('key');
+            configMaestra.pathCliente = urlParams.get('path') || configMaestra.pathCliente;
+            configMaestra.version = urlParams.get('ver') || configMaestra.version;
+            
+            if(configMaestra.dbUrl.includes("firebaseio.com")) {
+                configMaestra.projectId = configMaestra.dbUrl.split('https://')[1].split('.firebaseio')[0].split('-default-rtdb')[0];
+            }
+            
+            localStorage.setItem('beta_dev_config', JSON.stringify(configMaestra));
+            console.log("✅ Configuración sincronizada por URL.");
+            
+            // Limpiar la URL para que no se vea la configuración
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
 
         items = JSON.parse(localStorage.getItem('beta_items')) || [];
         ventas = JSON.parse(localStorage.getItem('beta_ventas')) || [];
@@ -899,29 +931,33 @@
         document.getElementById('stockMinimo').value = stockMinimoGlobal;
         document.getElementById('fechaActual').textContent = diaActual;
         
-        const config = localStorage.getItem('beta_fb_config');
-        if(config) {
-            const c = JSON.parse(config);
-            document.getElementById('projectId').value = c.projectId;
-            document.getElementById('apiKey').value = c.apiKey;
-        } else {
-            document.getElementById('projectId').value = FIREBASE_CONFIG.projectId;
-            document.getElementById('apiKey').value = FIREBASE_CONFIG.apiKey;
-        }
-        
         conectarFirebase();
         render();
     }
 
+    // ============================================================
+    // 🛠️ CONFIGURACIÓN DE ENTREGA (HARDCODED PARA EL CLIENTE)
+    // ============================================================
+    // Modifica estos valores antes de enviar el archivo al cliente.
+    const CONFIG_ENTREGA = {
+        dbUrl: 'https://viveres-pruebas-default-rtdb.firebaseio.com', // URL de Firebase
+        apiKey: 'AIzaSyB_I1xI7BS1ArpvkAOXiOYJ5ezZQiNKL7E',           // API Key de Firebase
+        pathCliente: 'viveres_beta/',                                // Carpeta del cliente en la DB
+        version: 'BASICO',                                           // BASICO, PRO o PREMIUM
+        limiteDispositivos: 2,                                       // Cantidad de equipos permitidos
+        claveMaestra: 'admin123'                                     // Clave para el Panel Maestro
+    };
+    // ============================================================
+
     // --- CONFIGURACIÓN MAESTRA Y LICENCIAMIENTO ---
     let configMaestra = JSON.parse(localStorage.getItem('beta_dev_config')) || {
-        version: 'BASICO',
-        limiteDispositivos: 2,
-        pathCliente: 'viveres_beta/',
-        dbUrl: 'https://viveres-pruebas-default-rtdb.firebaseio.com',
-        apiKey: 'AIzaSyB_I1xI7BS1ArpvkAOXiOYJ5ezZQiNKL7E',
-        projectId: 'viveres-pruebas',
-        claveMaestra: 'admin123'
+        version: CONFIG_ENTREGA.version,
+        limiteDispositivos: CONFIG_ENTREGA.limiteDispositivos,
+        pathCliente: CONFIG_ENTREGA.pathCliente,
+        dbUrl: CONFIG_ENTREGA.dbUrl,
+        apiKey: CONFIG_ENTREGA.apiKey,
+        projectId: CONFIG_ENTREGA.dbUrl.includes("firebaseio.com") ? CONFIG_ENTREGA.dbUrl.split('https://')[1].split('.firebaseio')[0].split('-default-rtdb')[0] : '',
+        claveMaestra: CONFIG_ENTREGA.claveMaestra
     };
 
     let deviceId = localStorage.getItem('beta_device_id') || ('dev_' + Math.random().toString(36).substr(2, 9));
@@ -947,7 +983,8 @@
         document.getElementById('devVersion').value = configMaestra.version;
         document.getElementById('devLimiteDispositivos').value = configMaestra.limiteDispositivos;
         document.getElementById('devPathCliente').value = configMaestra.pathCliente;
-        document.getElementById('devDbUrl').value = configMaestra.dbUrl;
+        document.getElementById('devDbUrl').value = configMaestra.dbUrl || '';
+        document.getElementById('devApiKey').value = configMaestra.apiKey || '';
         document.getElementById('devClaveMaestra').value = configMaestra.claveMaestra || 'admin123';
         document.getElementById('modalMaestro').classList.add('active');
     }
@@ -962,12 +999,60 @@
         configMaestra.limiteDispositivos = parseInt(document.getElementById('devLimiteDispositivos').value) || 2;
         configMaestra.pathCliente = document.getElementById('devPathCliente').value.trim() || 'viveres_beta/';
         configMaestra.dbUrl = document.getElementById('devDbUrl').value.trim();
+        configMaestra.apiKey = document.getElementById('devApiKey').value.trim();
         configMaestra.claveMaestra = document.getElementById('devClaveMaestra').value.trim() || 'admin123';
         
         if(configMaestra.dbUrl.includes("firebaseio.com")) {
             configMaestra.projectId = configMaestra.dbUrl.split('https://')[1].split('.firebaseio')[0].split('-default-rtdb')[0];
         }
         localStorage.setItem('beta_dev_config', JSON.stringify(configMaestra));
+    }
+
+    function generarArchivoCliente() {
+        // 1. Obtener los datos actuales del panel
+        const version = document.getElementById('devVersion').value;
+        const limite = document.getElementById('devLimiteDispositivos').value;
+        const path = document.getElementById('devPathCliente').value.trim();
+        const dbUrl = document.getElementById('devDbUrl').value.trim();
+        const apiKey = document.getElementById('devApiKey').value.trim();
+        const claveM = document.getElementById('devClaveMaestra').value.trim();
+
+        if(!dbUrl || !apiKey || !path) {
+            alert("⚠️ Por favor, completa la URL de Firebase, la API Key y el Path del Cliente antes de generar.");
+            return;
+        }
+
+        // 2. Obtener el código fuente de la página actual
+        let htmlContent = document.documentElement.outerHTML;
+        htmlContent = "<!DOCTYPE html>\n" + htmlContent;
+
+        // 3. Inyectar la configuración en el bloque CONFIG_ENTREGA usando Regex
+        const regexConfig = /const CONFIG_ENTREGA = \{[\s\S]*?\};/;
+        const nuevaConfig = `const CONFIG_ENTREGA = {
+        dbUrl: '${dbUrl}',
+        apiKey: '${apiKey}',
+        pathCliente: '${path}',
+        version: '${version}',
+        limiteDispositivos: ${limite},
+        claveMaestra: '${claveM}'
+    };`;
+
+        htmlContent = htmlContent.replace(regexConfig, nuevaConfig);
+
+        // 4. Crear el archivo y descargarlo
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const nombreArchivo = `ControlViveres_${path.replace(/[^a-z0-9]/gi, '_')}.html`;
+        
+        a.href = url;
+        a.download = nombreArchivo;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        alert(`✅ ¡Listo! Se ha descargado el archivo: ${nombreArchivo}\n\nYa puedes enviarlo por WhatsApp a tu cliente.`);
     }
 
     function reinicioMaestroSistema() {
@@ -985,10 +1070,16 @@
 
     function conectarFirebase() {
         if(typeof firebase === "undefined" || !navigator.onLine) { if(typeof render === "function") render(); return; }
+        
+        // Si ya hay una app de firebase, recargamos para aplicar la nueva config
+        if (firebase.apps.length) {
+            location.reload();
+            return;
+        }
+
         const config = { apiKey: configMaestra.apiKey, projectId: configMaestra.projectId, databaseURL: configMaestra.dbUrl };
         try {
-            if (firebase.apps.length) firebase.app().delete().then(() => iniciarFirebase(config));
-            else iniciarFirebase(config);
+            iniciarFirebase(config);
         } catch(e) { console.error(e); }
     }
 
@@ -2304,7 +2395,31 @@
         localStorage.setItem('beta_dueno_config', JSON.stringify(configDueno));
         render();
     }
-    function generarQR() { const q = document.getElementById('qrcode'); q.innerHTML = ''; new QRCode(q, { text: window.location.href, width: 150, height: 150 }); }
+    function generarQR() { 
+        const q = document.getElementById('qrcode'); 
+        q.innerHTML = ''; 
+        
+        // Crear URL con parámetros de configuración para replicación automática
+        const baseUrl = window.location.href.split('?')[0];
+        const params = new URLSearchParams();
+        params.set('db', configMaestra.dbUrl);
+        params.set('key', configMaestra.apiKey);
+        params.set('path', configMaestra.pathCliente);
+        params.set('ver', configMaestra.version);
+        
+        const syncUrl = `${baseUrl}?${params.toString()}`;
+        
+        new QRCode(q, { 
+            text: syncUrl, 
+            width: 180, 
+            height: 180,
+            colorDark : "#2c3e50",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        }); 
+        
+        console.log("📱 QR de sincronización generado con éxito.");
+    }
     function descargarReporte() {
         let csv = "FECHA,TIPO,VENTAS_TOTAL,IVA,GANANCIA_NETA\n" + cierres.map(c => `${c.fecha},${c.tipo},${c.ingresos},${c.iva},${c.ganancia}`).join("\n");
         const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `reporte_contable.csv`; a.click();
