@@ -259,7 +259,7 @@
     </div>
 
     <div class="tabs">
-        <button id="tab-inventario" class="tab-btn active" onclick="switchTab('inventario')">📦 Stock</button>
+        <button id="tab-inventario" class="tab-btn" onclick="switchTab('inventario')">📦 Stock</button>
         <button id="tab-ventas" class="tab-btn" onclick="switchTab('ventas')">🛒 Venta</button>
         <button id="tab-creditos" class="tab-btn" onclick="switchTab('creditos')">💳 Créditos</button>
         <button id="tab-proveedores" class="tab-btn" onclick="switchTab('proveedores')">🏢 Prov.</button>
@@ -268,7 +268,7 @@
     </div>
 
     <!-- TAB: INVENTARIO -->
-    <div id="inventario" class="tab-content active">
+    <div id="inventario" class="tab-content">
         <div class="input-row" style="display:flex; gap:10px;">
             <div class="input-group" style="flex:1;">
                 <label>Tasa Dólar (BCV)</label>
@@ -1685,6 +1685,32 @@
         for (const [id, hidden] of Object.entries(tabs)) {
             const el = document.getElementById(id);
             if(el) el.style.display = hidden ? 'none' : 'block';
+        }
+
+        // --- CORRECCIÓN: Si la pestaña activa está oculta, activar la primera visible ---
+        const tabContentActivo = document.querySelector('.tab-content.active');
+        const tabBtnActivo = document.querySelector('.tab-btn.active');
+        const tabBtnActivoId = tabBtnActivo ? tabBtnActivo.id : null;
+        const tabActivaOculta = tabBtnActivoId ? tabs[tabBtnActivoId] : true;
+
+        if(!tabContentActivo || tabActivaOculta) {
+            // Buscar la primera pestaña visible y activarla
+            const ordenTabs = ['inventario', 'ventas', 'creditos', 'proveedores', 'gastos', 'reportes'];
+            for (const tabId of ordenTabs) {
+                const btnId = 'tab-' + tabId;
+                const esOculta = tabs[btnId];
+                if (!esOculta) {
+                    // Desactivar todo
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    // Activar la primera visible
+                    const contenido = document.getElementById(tabId);
+                    const boton = document.getElementById(btnId);
+                    if(contenido) contenido.classList.add('active');
+                    if(boton) boton.classList.add('active');
+                    break;
+                }
+            }
         }
 
         // Bloqueos de Acción (Solo Lectura)
