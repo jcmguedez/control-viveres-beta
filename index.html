@@ -699,7 +699,7 @@
         <button class="btn-danger" onclick="reinicioMaestroSistema()" style="width:100%; margin-bottom:10px;">🔥 REINICIAR TODA LA BASE DE DATOS</button>
         
         <div class="btn-grid" style="margin-top:20px;">
-            <button class="btn-add" onclick="cerrarModalMaestro()">GUARDAR Y SALIR</button>
+            <button class="btn-add" onclick="guardarConfigMaestra(); cerrarModalMaestro();">GUARDAR Y SALIR</button>
         </div>
     </div>
 </div>
@@ -1101,21 +1101,53 @@
             }
         });
 
+        let primeraCargaCompleta = false;
+
         db.ref('.info/connected').on('value', snap => {
             firebaseConnected = snap.val() === true;
             document.getElementById('connectionStatus').textContent = firebaseConnected ? '🟢 Online (' + configMaestra.version + ')' : '🔴 Local';
             document.getElementById('connectionStatus').className = 'connection-status ' + (firebaseConnected ? 'online' : 'offline');
-            if(firebaseConnected) sync(); 
+            
+            // Solo sincronizamos (subimos) si ya hemos descargado los datos de la nube al menos una vez
+            if(firebaseConnected && primeraCargaCompleta) sync(); 
         });
 
+        // Escuchar cambios en la nube (Descarga)
         db.ref(root + 'data').on('value', snap => {
             const data = snap.val();
             if(data) {
-                items = data.items || []; ventas = data.ventas || []; creditos = data.creditos || [];
-                cierres = data.cierres || []; proveedores = data.proveedores || []; facturas = data.facturas || [];
-                clientes = data.clientes || []; gastosOperativos = data.gastosOperativos || [];
-                tasaDolar = data.tasa || 36.50; ivaPorcentaje = data.iva || 16; stockMinimoGlobal = data.stockMinGlobal || 5;
+                console.log("📥 Datos recibidos de la nube...");
+                items = data.items || []; 
+                ventas = data.ventas || []; 
+                creditos = data.creditos || [];
+                cierres = data.cierres || []; 
+                proveedores = data.proveedores || []; 
+                facturas = data.facturas || [];
+                clientes = data.clientes || []; 
+                gastosOperativos = data.gastosOperativos || [];
+                tasaDolar = data.tasa || 36.50; 
+                ivaPorcentaje = data.iva || 16; 
+                stockMinimoGlobal = data.stockMinGlobal || 5;
+                
+                // Guardar en local para persistencia offline
+                localStorage.setItem('beta_items', JSON.stringify(items));
+                localStorage.setItem('beta_ventas', JSON.stringify(ventas));
+                localStorage.setItem('beta_creditos', JSON.stringify(creditos));
+                localStorage.setItem('beta_cierres', JSON.stringify(cierres));
+                localStorage.setItem('beta_proveedores', JSON.stringify(proveedores));
+                localStorage.setItem('beta_facturas', JSON.stringify(facturas));
+                localStorage.setItem('beta_clientes', JSON.stringify(clientes));
+                localStorage.setItem('beta_gastos_operativos', JSON.stringify(gastosOperativos));
+                localStorage.setItem('beta_tasa', tasaDolar);
+                localStorage.setItem('beta_iva', ivaPorcentaje);
+                localStorage.setItem('beta_stock_min_global', stockMinimoGlobal);
+                
+                primeraCargaCompleta = true;
                 render();
+            } else {
+                // Si la nube está vacía, marcamos como cargado para permitir futuras subidas
+                primeraCargaCompleta = true;
+                console.log("☁️ La nube está vacía. Listo para sincronizar datos locales.");
             }
         });
     }
