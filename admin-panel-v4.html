@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👑 Inverteca-Core | Panel Maestro v4</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --secondary: #27ae60; --danger: #e74c3c; --bg: #f4f7f6; --accent: #3498db; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 600px; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        #adminContent { display: none; }
+        #loginSection { max-width: 400px; margin: 100px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary); text-align: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px; margin-bottom: 30px; }
+        .card { border: 1px solid #ddd; padding: 20px; border-radius: 10px; margin-bottom: 20px; background: #fff; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.3s; margin-top: 10px; }
+        .btn-init { background: var(--secondary); color: white; }
+        .btn-init:hover { background: #219150; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .status { margin-top: 20px; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; display: none; }
+        .status.success { background: #d4edda; color: #155724; display: block; }
+        .status.error { background: #f8d7da; color: #721c24; display: block; }
+        .log-area { background: #000; color: #0f0; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.8rem; height: 150px; overflow-y: auto; margin-top: 20px; }
+        
+        /* Estilos para Pestañas */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 12px; cursor: pointer; border: none; border-radius: 8px; background: #dcdde1; font-weight: bold; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        
+        /* Buscador Inteligente */
+        .search-container { position: relative; margin-bottom: 20px; }
+        .search-results { 
+            position: absolute; top: 100%; left: 0; right: 0; 
+            background: white; border: 1px solid #ddd; border-radius: 8px; 
+            max-height: 200px; overflow-y: auto; z-index: 100; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none;
+        }
+        .search-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; transition: 0.2s; }
+        .search-item:hover { background: #f0f0f0; color: var(--accent); }
+        
+        .selected-badge { 
+            background: #e8f4fd; color: var(--accent); padding: 10px; 
+            border-radius: 8px; margin-bottom: 15px; display: flex; 
+            justify-content: space-between; align-items: center; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- SECCIÓN DE LOGIN -->
+    <div id="loginSection">
+        <h2 style="text-align:center; color: var(--primary);">🔐 Acceso Maestro</h2>
+        <div class="input-group">
+            <label>Email Administrador</label>
+            <input type="email" id="adminEmail" placeholder="admin@inverteca.com">
+        </div>
+        <div class="input-group">
+            <label>Contraseña</label>
+            <input type="password" id="adminPass" placeholder="******">
+        </div>
+        <button class="btn btn-init" onclick="loginAdmin()">INGRESAR AL PANEL</button>
+        <div id="loginError" style="color: var(--danger); text-align: center; margin-top: 10px; font-size: 0.9rem; display: none;"></div>
+    </div>
+
+    <!-- CONTENIDO DEL PANEL -->
+    <div class="container" id="adminContent">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="margin: 0; border: none; padding: 0;">👑 Inverteca-Core</h1>
+            <button onclick="logoutAdmin()" style="background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold;">Salir</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="btnTabRegistrar" onclick="switchTab('registrar')">➕ REGISTRAR</button>
+            <button class="tab-btn" id="btnTabGestionar" onclick="switchTab('gestionar')">🔍 GESTIONAR</button>
+        </div>
+
+        <!-- VISTA: REGISTRAR -->
+        <div id="viewRegistrar">
+            <div class="card">
+                <h3>🚀 Registro de Clientes (V4)</h3>
+                <div class="input-group">
+                    <label>ID del Cliente (Sin espacios)</label>
+                    <input type="text" id="clientId" placeholder="ej: viveres_juan">
+                </div>
+                <div class="input-group">
+                    <label>Nombre del Negocio</label>
+                    <input type="text" id="businessName" placeholder="ej: Víveres Juan C.A.">
+                </div>
+                <div class="input-group">
+                    <label>Nivel de Plan</label>
+                    <select id="planLevel">
+                        <option value="basico">Básico (2 Dispositivos)</option>
+                        <option value="pro">Pro (3 Dispositivos)</option>
+                        <option value="premium">Premium (4 Dispositivos)</option>
+                    </select>
+                </div>
+                <button class="btn btn-init" onclick="inicializarCliente()">⚡ INICIALIZAR CLIENTE</button>
+            </div>
+        </div>
+
+        <!-- VISTA: GESTIONAR -->
+        <div id="viewGestionar" style="display:none;">
+            <div class="card">
+                <h3>🏢 Monitor de Empresas</h3>
+                
+                <div class="search-container">
+                    <label>Buscar Cliente</label>
+                    <input type="text" id="inputSearch" placeholder="🔍 Buscar ID o Nombre..." oninput="filtrarEmpresas()">
+                    <div id="searchResults" class="search-results"></div>
+                </div>
+
+                <div id="selectedClientBadge" class="selected-badge" style="display:none;">
+                    <span>📍 Cliente: <span id="currentClientName">---</span></span>
+                    <button onclick="deseleccionarCliente()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;">✖</button>
+                </div>
+                
+                <div id="panelControl" style="display:none;">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; font-size: 0.9rem; margin-bottom: 20px; border: 1px solid #eee;">
+                        <p style="margin: 5px 0;"><strong>RIF:</strong> <span id="txtRif"></span> | <strong>Plan:</strong> <span id="txtPlan"></span></p>
+                        <p style="margin: 5px 0;"><strong>Equipos:</strong> <span id="txtEquipos"></span> | <strong>Ventas:</strong> <span id="txtVentas"></span></p>
+                    </div>
+
+                    <!-- Bloque de Mantenimiento -->
+                    <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ffeaa7; border-radius: 10px; background: #fffdf5;">
+                        <label style="color: #d35400;">🧹 Mantenimiento y Estado</label>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button class="btn btn-init" onclick="cambiarEstado('activo')" style="background: #27ae60; flex:1; margin-top:0;">✅ ACTIVAR</button>
+                            <button class="btn btn-danger" onclick="cambiarEstado('suspendido')" style="flex:1; margin-top:0;">🚫 SUSPENDER</button>
+                        </div>
+                        <button class="btn btn-danger" onclick="limpiarLogs()" style="background: #34495e; margin-top:10px;">🗑️ LIMPIAR LOGS (HISTORIAL)</button>
+                    </div>
+
+                    <!-- Controles SaaS V4 -->
+                    <div class="input-group">
+                        <label>Límite de Dispositivos (SaaS Control)</label>
+                        <input type="number" id="inputLimite">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>📅 Vencimiento Mantenimiento</label>
+                        <input type="date" id="inputMantenimiento">
+                    </div>
+
+                    <div class="input-group">
+                        <label>⏳ Días de Gracia (Post-Vencimiento)</label>
+                        <input type="number" id="inputGracia" min="0" max="30">
+                    </div>
+
+                    <div class="input-group">
+                        <label>💳 Estado de Pago</label>
+                        <select id="selectEstatusPago">
+                            <option value="al_dia">✅ Al Día</option>
+                            <option value="pendiente">⏳ Pendiente</option>
+                            <option value="mora">⚠️ Mora (Bloqueo)</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-init" onclick="guardarCambiosGestion()">💾 GUARDAR CAMBIOS</button>
+                    
+                    <hr style="margin: 25px 0; border: 0; border-top: 1px solid #eee;">
+                    
+                    <div class="input-group">
+                        <label>💬 Enviar Mensaje a la App</label>
+                        <textarea id="areaMensaje" placeholder="Escriba un mensaje para el cliente..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Color de Alerta</label>
+                        <select id="selectColor">
+                            <option value="verde">Informativo (Verde)</option>
+                            <option value="amarillo">Aviso (Amarillo)</option>
+                            <option value="rojo">Urgente (Rojo)</option>
+                        </select>
+                    </div>
+                    <button class="btn" style="background:#34495e; color:white;" onclick="enviarMensaje()">🚀 PUBLICAR MENSAJE</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="statusMsg" class="status"></div>
+        <div id="consoleLog" class="log-area">Esperando comandos...</div>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5sWhgWQ5RfIIzn_vAlZi9Zdp-7lwUSFc",
+            authDomain: "inverteca-core.firebaseapp.com",
+            databaseURL: "https://inverteca-core-default-rtdb.firebaseio.com",
+            projectId: "inverteca-core",
+            storageBucket: "inverteca-core.firebasestorage.app",
+            messagingSenderId: "647568711575",
+            appId: "1:647568711575:web:d09efc868294c96b0aeed2"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        let listaEmpresasGlobal = [];
+        let clienteSeleccionadoId = null;
+
+        // AUTENTICACIÓN
+        function loginAdmin() {
+            const email = document.getElementById('adminEmail').value;
+            const pass = document.getElementById('adminPass').value;
+            auth.signInWithEmailAndPassword(email, pass).catch(e => {
+                document.getElementById('loginError').textContent = "Error: " + e.message;
+                document.getElementById('loginError').style.display = 'block';
+            });
+        }
+
+        function logoutAdmin() { auth.signOut().then(() => location.reload()); }
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+                cargarListaMaestra();
+            }
+        });
+
+        // NAVEGACIÓN
+        function switchTab(tab) {
+            document.getElementById('viewRegistrar').style.display = tab === 'registrar' ? 'block' : 'none';
+            document.getElementById('viewGestionar').style.display = tab === 'gestionar' ? 'block' : 'none';
+            document.getElementById('btnTabRegistrar').classList.toggle('active', tab === 'registrar');
+            document.getElementById('btnTabGestionar').classList.toggle('active', tab === 'gestionar');
+        }
+
+        // BUSCADOR INTELIGENTE
+        function cargarListaMaestra() {
+            db.ref('licencias_activas').on('value', (snap) => {
+                listaEmpresasGlobal = [];
+                snap.forEach(child => {
+                    listaEmpresasGlobal.push({ id: child.key, ...child.val() });
+                });
+            });
+        }
+
+        function filtrarEmpresas() {
+            const query = document.getElementById('inputSearch').value.toLowerCase();
+            const resultsDiv = document.getElementById('searchResults');
+            if (query.length < 1) { resultsDiv.style.display = 'none'; return; }
+            const filtrados = listaEmpresasGlobal.filter(e => e.id.toLowerCase().includes(query)).slice(0, 10);
+            if (filtrados.length > 0) {
+                resultsDiv.innerHTML = filtrados.map(e => `
+                    <div class="search-item" onclick="seleccionarCliente('${e.id}')">
+                        <strong>${e.id.toUpperCase()}</strong> <br>
+                        <small>Plan: ${e.plan} | Estado: ${e.estado}</small>
+                    </div>
+                `).join('');
+                resultsDiv.style.display = 'block';
+            } else {
+                resultsDiv.innerHTML = '<div class="search-item">No se encontraron resultados</div>';
+                resultsDiv.style.display = 'block';
+            }
+        }
+
+        async function seleccionarCliente(id) {
+            clienteSeleccionadoId = id;
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('inputSearch').value = "";
+            document.getElementById('currentClientName').textContent = id.toUpperCase();
+            document.getElementById('selectedClientBadge').style.display = 'flex';
+            document.getElementById('panelControl').style.display = 'block';
+            cargarDetalles(id);
+        }
+
+        function deseleccionarCliente() {
+            clienteSeleccionadoId = null;
+            document.getElementById('selectedClientBadge').style.display = 'none';
+            document.getElementById('panelControl').style.display = 'none';
+        }
+
+        // LÓGICA DE GESTIÓN V4
+        async function cargarDetalles(id) {
+            try {
+                const snapLic = await db.ref(`licencias_activas/${id}`).get();
+                const snapSeg = await db.ref(`clientes/${id}/configuracion_seguridad`).get();
+                const snapEmp = await db.ref(`clientes/${id}/data/empresa`).get();
+                const snapVentas = await db.ref(`clientes/${id}/data/ventas`).get();
+                const snapEquipos = await db.ref(`clientes/${id}/lista_blanca`).get();
+
+                if(snapLic.exists()){
+                    const lic = snapLic.val();
+                    const seg = snapSeg.val() || {};
+                    const emp = snapEmp.val() || {};
+                    
+                    let numEquipos = snapEquipos.exists() ? Object.keys(snapEquipos.val()).filter(k => k !== '_init').length : 0;
+                    let numVentas = snapVentas.exists() ? Object.keys(snapVentas.val()).filter(k => k !== '_init').length : 0;
+
+                    document.getElementById('txtRif').textContent = emp.rif || 'N/A';
+                    document.getElementById('txtPlan').textContent = (lic.plan || 'N/A').toUpperCase();
+                    document.getElementById('txtEquipos').textContent = numEquipos;
+                    document.getElementById('txtVentas').textContent = numVentas;
+                    
+                    // Carga de campos V4
+                    document.getElementById('inputLimite').value = seg.limite_dispositivos || 2;
+                    document.getElementById('inputMantenimiento').value = seg.vencimiento_mantenimiento || "";
+                    document.getElementById('inputGracia').value = seg.dias_gracia || 3;
+                    document.getElementById('selectEstatusPago').value = seg.estatus_pago || 'al_dia';
+                    
+                    log(`📊 Datos de ${id} cargados.`);
+                }
+            } catch (e) { log(`❌ Error: ${e.message}`); }
+        }
+
+        async function guardarCambiosGestion() {
+            if(!clienteSeleccionadoId) return;
+            const limite = document.getElementById('inputLimite').value;
+            const venc = document.getElementById('inputMantenimiento').value;
+            const gracia = document.getElementById('inputGracia').value;
+            const estatus = document.getElementById('selectEstatusPago').value;
+
+            try {
+                await db.ref(`clientes/${clienteSeleccionadoId}/configuracion_seguridad`).update({
+                    limite_dispositivos: parseInt(limite),
+                    vencimiento_mantenimiento: venc,
+                    dias_gracia: parseInt(gracia),
+                    estatus_pago: estatus
+                });
+                await db.ref(`licencias_activas/${clienteSeleccionadoId}`).update({
+                    limite_dispositivos: parseInt(limite)
+                });
+                showStatus("✅ Cambios V4 guardados", "success");
+                log(`⚙️ Configuración de ${clienteSeleccionadoId} actualizada.`);
+            } catch (e) { showStatus("Error al guardar", "error"); }
+        }
+
+        async function cambiarEstado(nuevoEstado) {
+            if (!clienteSeleccionadoId) return;
+            try {
+                await db.ref(`licencias_activas/${clienteSeleccionadoId}/estado`).set(nuevoEstado);
+                await db.ref(`clientes/${clienteSeleccionadoId}/parametros/estado_servicio`).set(nuevoEstado);
+                log(`✅ Estado de '${clienteSeleccionadoId}' -> ${nuevoEstado}.`);
+                showStatus(`Cliente ${nuevoEstado === 'activo' ? 'activado' : 'suspendido'}.`, "success");
+                cargarDetalles(clienteSeleccionadoId);
+            } catch (e) { showStatus("Error", "error"); }
+        }
+
+        async function limpiarLogs() {
+            if (!clienteSeleccionadoId || !confirm(`⚠️ ¿Borrar LOGS de '${clienteSeleccionadoId}'?`)) return;
+            try {
+                await db.ref(`clientes/${clienteSeleccionadoId}/logs`).remove();
+                await db.ref(`clientes/${clienteSeleccionadoId}/logs`).set({ mensaje: "Limpieza: " + new Date().toLocaleString() });
+                showStatus("Logs limpiados", "success");
+            } catch (e) { showStatus("Error", "error"); }
+        }
+
+        async function enviarMensaje() {
+            const msg = document.getElementById('areaMensaje').value.trim();
+            const color = document.getElementById('selectColor').value;
+            if(!clienteSeleccionadoId || !msg) return;
+            try {
+                await db.ref(`clientes/${clienteSeleccionadoId}/comunicaciones`).update({
+                    mensaje_admin: msg, color_alerta: color, ultima_actualizacion: new Date().toISOString()
+                });
+                showStatus("🚀 Mensaje enviado", "success");
+                document.getElementById('areaMensaje').value = "";
+            } catch (e) { showStatus("Error", "error"); }
+        }
+
+        // REGISTRO V4 (BATCH)
+        async function inicializarCliente() {
+            const id = document.getElementById('clientId').value.trim().toLowerCase();
+            const name = document.getElementById('businessName').value.trim();
+            const plan = document.getElementById('planLevel').value;
+
+            if (!id || !name) { showStatus("❌ Complete los campos", "error"); return; }
+            log(`Iniciando estructura SaaS V4 para: ${id}...`);
+            
+            let limiteEquipos = 2;
+            if (plan === "pro") { limiteEquipos = 3; }
+            else if (plan === "premium") { limiteEquipos = 4; }
+
+            const batch = {};
+
+            // Nodo Global de Licencia
+            batch[`licencias_activas/${id}`] = { 
+                estado: "activo", 
+                plan: plan, 
+                limite_dispositivos: limiteEquipos, 
+                fecha_creacion: new Date().toISOString() 
+            };
+
+            // Nodo de Seguridad, Vencimiento y Gracia
+            batch[`clientes/${id}/configuracion_seguridad`] = {
+                id_dispositivo_maestro: "PENDIENTE",
+                limite_dispositivos: limiteEquipos,
+                vencimiento_mantenimiento: "2026-12-31", 
+                dias_gracia: 3,
+                estatus_pago: "al_dia",
+                requiere_bloqueo: false
+            };
+
+            // Nodo de Roles Base
+            batch[`clientes/${id}/roles_base`] = {
+                vendedor: { nombre: "Vendedor", permisos: { ventas: true, reportes: false, anular: false, inventario: false } },
+                supervisor: { nombre: "Supervisor", permisos: { ventas: true, reportes: true, anular: true, inventario: true } },
+                administrador: { nombre: "Administrador", permisos: { acceso_total: true } }
+            };
+
+            // Nodo de Parámetros y Comunicaciones
+            batch[`clientes/${id}/parametros`] = { estado_servicio: "activo", nivel_suscripcion: plan, pass_admin: "1234", iva: 16 };
+            batch[`clientes/${id}/data/empresa`] = { nombre: name, rif: "J-00000000-0" };
+            batch[`clientes/${id}/comunicaciones`] = {
+                mensaje_admin: "Bienvenido. Plan " + plan.toUpperCase() + " activado.",
+                mostrar_alerta: false,
+                color_alerta: "verde",
+                ultima_actualizacion: new Date().toISOString()
+            };
+
+            try {
+                await db.ref().update(batch);
+                showStatus(`🚀 Estructura SaaS para '${id}' creada!`, "success");
+                log(`✅ Proceso V4 completado.`);
+            } catch (e) { 
+                log(`❌ Error: ${e.message}`); 
+                showStatus("Error al crear estructura", "error");
+            }
+        }
+
+        function log(msg) {
+            const consoleEl = document.getElementById('consoleLog');
+            consoleEl.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('statusMsg');
+            el.textContent = msg;
+            el.className = `status ${type}`;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 4000);
+        }
+    </script>
+</body>
+</html>
